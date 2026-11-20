@@ -79,7 +79,7 @@
       # the user's own versions and config, and only offered if installed.
       init = pkgs.writeShellApplication {
         name = "init";
-        runtimeInputs = [pkgs.cargo-generate pkgs.coreutils];
+        runtimeInputs = [pkgs.cargo-generate pkgs.coreutils pkgs.gum];
         text = ''
           die() {
             echo "init: $*" >&2
@@ -125,7 +125,9 @@
 
           if [ -z "$base" ]; then
             if [ "$silent" = false ] && [ -t 0 ]; then
-              read -rp "Template (basic, axum) [basic]: " base || die "no template chosen"
+              base=$(gum choose --header "Template" --label-delimiter "|" \
+                "basic - ${self.templates.basic.description}|basic" \
+                "axum - ${self.templates.axum.description}|axum") || die "no template chosen"
             fi
             base=''${base:-basic}
           fi
@@ -173,7 +175,10 @@
           toml=''${toml//@VCS_DEFAULT@/''${vcs_choices[0]}}
           printf '%s\n' "$toml" >"$config"
 
-          cargo-generate generate --path "$template" --destination "$staging" --vcs none --no-workspace --force "''${args[@]}"
+          # Its progress lines go to stdout and name the staging dir, which is an
+          # implementation detail; prompts go to stderr and are untouched.
+          cargo-generate generate --path "$template" --destination "$staging" --vcs none --no-workspace --force "''${args[@]}" \
+            | { grep --line-buffered -vF "$staging" || true; }
 
           shopt -s nullglob dotglob
           generated=("$staging"/*)
