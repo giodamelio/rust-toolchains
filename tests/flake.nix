@@ -75,7 +75,18 @@
     checksFor = channel:
       pkgs.lib.mapAttrs' (name: pkgs.lib.nameValuePair "${channel}-${name}")
       (evalTemplate channel).checks.${system};
+
+    # templates/init duplicates the files that carry placeholders, so its
+    # defaults must keep reproducing templates/basic exactly.
+    init-matches-basic = pkgs.runCommand "init-matches-basic" {} ''
+      # cargo-generate derives `authors` from $USER and aborts without it.
+      export HOME=$TMPDIR USER=nixbld
+      cd $TMPDIR
+      ${rust-toolchains.apps.${system}.init.program} --name rust-project --silent
+      diff -r ${template} rust-project
+      touch $out
+    '';
   in {
-    checks.${system} = checksFor "stable" // checksFor "nightly";
+    checks.${system} = checksFor "stable" // checksFor "nightly" // {inherit init-matches-basic;};
   };
 }
