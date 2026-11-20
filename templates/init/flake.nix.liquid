@@ -23,9 +23,10 @@
 
       perSystem = {config, ...}: {
         rust-toolchains.channel = "{{ channel }}";
-{%- for module in disable %}
+{%- assign all_modules = "prek,jjFix,checks,banner,unusedDeps,unusedDeps.devDependencies,cargoDeny,skills" | split: "," %}
+{%- for module in all_modules %}{% unless modules contains module %}
         rust-toolchains.{{ module }}.enable = false;
-{%- endfor %}
+{%- endunless %}{% endfor %}
 
         packages.default = config.rust-toolchains.rustPlatform.buildRustPackage {
           pname = "{{ project-name }}";

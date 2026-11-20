@@ -11,10 +11,11 @@ choices = ["stable", "nightly"]
 default = "stable"
 
 # One multi-select rather than a bool per module: a single prompt
-# interactively, and `-d disable=a,b` fails loudly on any unknown name.
-[placeholders.disable]
+# interactively, and `-d modules=a,b` fails loudly on any unknown name.
+# Keep the default list and the list in flake.nix.liquid in step.
+[placeholders.modules]
 type = "array"
-prompt = "Modules to disable (space toggles, enter confirms)"
+prompt = "Modules to include (space toggles, enter confirms)"
 choices = [
   { value = "prek", label = "prek: git hooks from prek.toml" },
   { value = "jjFix", label = "jjFix: jj fix tools in the repo config" },
@@ -25,7 +26,7 @@ choices = [
   { value = "cargoDeny", label = "cargoDeny: cargo-deny pre-push hook" },
   { value = "skills", label = "skills: agent skills lockfile check" },
 ]
-default = []
+default = ["prek", "jjFix", "checks", "banner", "unusedDeps", "unusedDeps.devDependencies", "cargoDeny", "skills"]
 
 [placeholders.publish]
 type = "bool"
@@ -48,5 +49,5 @@ ignore = ["LICENSE-APACHE"]
 [conditional.'publish && license == "Apache-2.0"']
 ignore = ["LICENSE-MIT"]
 
-[conditional.'disable.contains("skills")']
+[conditional.'!modules.contains("skills")']
 ignore = ["agent-skills.lock.json"]
