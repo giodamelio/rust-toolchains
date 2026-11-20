@@ -19,16 +19,10 @@
 
     # Fetched at eval time rather than through toolchainOf, whose pkgs.fetchurl
     # would make other systems' outputs depend on import-from-derivation.
-    manifests = {
-      stable = builtins.fetchurl {
-        url = "https://static.rust-lang.org/dist/channel-rust-1.100.0.toml";
-        sha256 = "sha256-MFHoWVcPZKjFrLnQnodCXbUsfZcofGfo9tV9fTTvklg=";
-      };
-      nightly = builtins.fetchurl {
-        url = "https://static.rust-lang.org/dist/2026-11-19/channel-rust-nightly.toml";
-        sha256 = "sha256-nBrsF+c8Q9+bCrAG0wYnRTAWHKu61G29wlPdDGA9zIU=";
-      };
-    };
+    manifests =
+      builtins.mapAttrs
+      (_: pin: builtins.fetchurl {inherit (pin) url sha256;})
+      (builtins.fromJSON (builtins.readFile ./toolchains.json));
 
     components = ["rustc" "cargo" "clippy" "rustfmt" "rust-src" "rust-analyzer"];
   in {
@@ -44,7 +38,11 @@
       prekLib = import ./nix/lib/prek.nix {inherit (pkgs) lib pkgs;};
     in {
       default = pkgs.mkShell {
-        packages = [pkgs.alejandra pkgs.prek];
+        packages = [
+          pkgs.alejandra
+          pkgs.prek
+          (import ./nix/bump-toolchain.nix {inherit pkgs components systems;})
+        ];
         shellHook = prekLib.mkShellHook (prekLib.mkConfig [({id = "alejandra";} // prekLib.hooks.alejandra)]);
       };
     });
