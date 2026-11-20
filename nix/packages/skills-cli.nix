@@ -14,6 +14,12 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   cargoHash = "sha256-8E6r8fdEzRIYflbIr+/9jKl2RwEr719Nx/037WtZ2xg=";
 
+  # skills-cli hardwires the skill library's telemetry feature, which posts
+  # usage events to add-skill.vercel.sh. Without it, telemetry::track is a no-op.
+  postPatch = ''
+    substituteInPlace Cargo.toml --replace-fail '"telemetry",' ""
+  '';
+
   meta = {
     description = "Rust port of the Vercel Skills CLI for installing agent skills";
     homepage = "https://github.com/qntx/skill";
