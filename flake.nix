@@ -38,5 +38,15 @@
       manifests);
 
     formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.alejandra);
+
+    flakeModules = import ./nix/modules {inherit self;};
+
+    templates = {
+      default = self.templates.basic;
+      basic = {
+        path = ./templates/basic;
+        description = "Rust binary using the pinned rust-toolchains toolchain, flake-parts and prek hooks";
+      };
+    };
   };
 }
