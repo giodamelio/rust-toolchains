@@ -64,11 +64,9 @@
     # `nix flake update fenix`. Nightly is pinned by date in nightly.json.
     packages = eachSystem (system: let
       fenixPkgs = fenix.packages.${system};
-      pkgs = nixpkgs.legacyPackages.${system};
     in {
       stable = fenixPkgs.stable.withComponents components;
       nightly = (fenixPkgs.fromManifestFile nightlyManifest).withComponents components;
-      skills-cli = pkgs.callPackage ./nix/packages/skills-cli.nix {};
     });
 
     formatter = eachSystem mkTreefmt;
@@ -84,8 +82,6 @@
           treefmt
           pkgs.prek
           (import ./nix/bump-nightly.nix {inherit pkgs components systems;})
-          (import ./nix/bump-skills-cli.nix {inherit pkgs;})
-          self.packages.${system}.skills-cli
         ];
         shellHook =
           prekLib.mkShellHook (prekLib.mkConfig [
@@ -109,10 +105,6 @@
               {
                 command = "bump-nightly [YYYY-MM-DD]";
                 description = "Bump the nightly pin in nightly.json";
-              }
-              {
-                command = "bump-skills-cli [--version X]";
-                description = "Bump skills-cli to its latest release";
               }
               {
                 command = "nix fmt";
