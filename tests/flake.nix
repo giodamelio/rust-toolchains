@@ -80,9 +80,11 @@
     # defaults must keep reproducing templates/basic exactly.
     init-matches-basic = pkgs.runCommand "init-matches-basic" {} ''
       # cargo-generate derives `authors` from $USER and aborts without it.
+      # vcs=none because the sandbox has no jj or git, and a repo would show
+      # up in the diff.
       export HOME=$TMPDIR USER=nixbld
       cd $TMPDIR
-      ${rust-toolchains.apps.${system}.init.program} --name rust-project --silent
+      ${rust-toolchains.apps.${system}.init.program} --name rust-project --silent -d vcs=none
       diff -r ${template} rust-project
       touch $out
     '';

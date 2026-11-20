@@ -20,10 +20,14 @@
       exit 1
     }
 
-    # jj comes from the user's PATH, so a non-colocated jj repo, which git
-    # cannot see, still resolves to its root when jj is installed.
+    # init sets the override because a project created without a repo may
+    # sit inside someone else's. jj comes from the user's PATH, so a
+    # non-colocated jj repo, which git cannot see, still resolves when jj is
+    # installed.
     find_lock() {
-      root=$(git rev-parse --show-toplevel 2>/dev/null) \
+      root=''${RUST_TOOLCHAINS_SKILLS_ROOT:-}
+      [ -n "$root" ] \
+        || root=$(git rev-parse --show-toplevel 2>/dev/null) \
         || root=$(jj root 2>/dev/null) \
         || root=$PWD
       lock="$root/${lockFile}"

@@ -4,6 +4,11 @@ cargo_generate_version = ">=0.25.0"
 # stray `{{` there can never be mistaken for a placeholder.
 include = ["/flake.nix", "/Cargo.toml", "/LICENSE-MIT"]
 
+# cargo-generate does not move .git out of its temp dir, so a hook cannot
+# create the repo. This one only records the answers the wrapper acts on.
+[hooks]
+post = ["init-answers.rhai"]
+
 [placeholders.channel]
 type = "string"
 prompt = "Rust channel"
@@ -27,6 +32,19 @@ choices = [
   { value = "skills", label = "skills: agent skills lockfile check" },
 ]
 default = ["prek", "jjFix", "checks", "banner", "unusedDeps", "unusedDeps.devDependencies", "cargoDeny", "skills"]
+
+[conditional.'modules.contains("skills")'.placeholders.install_skills]
+type = "bool"
+prompt = "Download the agent skills now (about 44, with gh skill, takes about 2 minutes)?"
+default = false
+
+# cargo-generate defaults are static, so the init wrapper swaps both tokens
+# for the tools it finds on PATH before running it.
+[placeholders.vcs]
+type = "string"
+prompt = "Version control to set up"
+choices = ["@VCS_CHOICES@"]
+default = "@VCS_DEFAULT@"
 
 [placeholders.publish]
 type = "bool"

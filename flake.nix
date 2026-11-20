@@ -73,26 +73,100 @@
 
     apps = eachSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system};
+      inherit (pkgs) lib;
+      skills = import ./nix/lib/skills.nix {inherit pkgs lib;};
+      # jj and git are deliberately not runtimeInputs: the repo is created with
+      # the user's own versions and config, and only offered if installed.
       init = pkgs.writeShellApplication {
         name = "init";
         runtimeInputs = [pkgs.cargo-generate pkgs.coreutils];
-        # cargo-generate copies a template keeping its read-only store mode and
-        # then fails writing the rendered files, so it gets a writable copy.
-        # The overlay's .liquid files replace basic's copies of the same name,
-        # so only the files with placeholders are duplicated.
         text = ''
+          die() {
+            echo "init: $*" >&2
+            exit 1
+          }
+
+          # The project is found as the only entry cargo-generate creates in
+          # an empty staging dir, so a destination of the user's own, or
+          # --init's generating into it directly, would break that.
+          for arg in "$@"; do
+            case $arg in
+              --destination | --destination=* | --init)
+                die "$arg is not supported; cd to the directory that should contain the project and run init there"
+                ;;
+            esac
+          done
+
           template=$(mktemp -d)
-          trap 'rm -rf "$template"' EXIT
+          staging=$(mktemp -d)
+          trap 'rm -rf "$template" "$staging"' EXIT
+
+          # cargo-generate copies a template keeping its read-only store mode and
+          # then fails writing the rendered files, so it gets a writable copy.
+          # The overlay's .liquid files replace basic's copies of the same name,
+          # so only the files with placeholders are duplicated.
           cp -r --no-preserve=mode ${./templates/basic}/. "$template"
           cp -r --no-preserve=mode ${./templates/init}/. "$template"
-          cargo-generate generate --path "$template" --vcs none --no-workspace --force "$@"
+
+          vcs_choices=()
+          command -v jj >/dev/null && vcs_choices+=(jj)
+          command -v git >/dev/null && vcs_choices+=(git)
+          vcs_choices+=(none)
+          printf -v quoted '"%s", ' "''${vcs_choices[@]}"
+          config="$template/cargo-generate.toml"
+          toml=$(<"$config")
+          toml=''${toml//'"@VCS_CHOICES@"'/''${quoted%, }}
+          toml=''${toml//@VCS_DEFAULT@/''${vcs_choices[0]}}
+          printf '%s\n' "$toml" >"$config"
+
+          cargo-generate generate --path "$template" --destination "$staging" --vcs none --no-workspace --force "$@"
+
+          shopt -s nullglob dotglob
+          generated=("$staging"/*)
+          [ "''${#generated[@]}" -eq 1 ] && [ -d "''${generated[0]}" ] \
+            || die "expected cargo-generate to create one project directory, found ''${#generated[@]} entries"
+          project="$PWD/$(basename "''${generated[0]}")"
+          [ -e "$project" ] || [ -L "$project" ] && die "$project already exists, so it was left alone"
+          mv -T "''${generated[0]}" "$project"
+
+          answers="$project/.init-answers"
+          [ -f "$answers" ] || die "the template's post hook did not write $answers"
+          vcs="" install_skills=""
+          while IFS='=' read -r key value; do
+            case $key in
+              vcs) vcs=$value ;;
+              install_skills) install_skills=$value ;;
+            esac
+          done <"$answers"
+          rm "$answers"
+          echo "init: created $project"
+
+          cd "$project"
+          case $vcs in
+            jj) setup=(jj git init) ;;
+            git) setup=(git init) ;;
+            none) setup=() ;;
+            *) die "created $project, but the vcs answer '$vcs' is unknown" ;;
+          esac
+          if [ "''${#setup[@]}" -gt 0 ]; then
+            cmd="''${setup[*]}"
+            command -v "$vcs" >/dev/null \
+              || die "created $project, but could not set up $vcs: it is not on PATH. Install it and run '$cmd' there."
+            "''${setup[@]}" \
+              || die "created $project, but '$cmd' failed. Fix the error above and run it there."
+          fi
+
+          if [ "$install_skills" = true ]; then
+            RUST_TOOLCHAINS_SKILLS_ROOT=$project ${lib.getExe skills.install} \
+              || die "created $project, but downloading the agent skills failed. Run skills-install in its devshell to retry."
+          fi
         '';
       };
     in {
       init = {
         type = "app";
         program = pkgs.lib.getExe init;
-        meta.description = "Generate a new project from templates/basic, asking for the channel, modules and license";
+        meta.description = "Generate a new project from templates/basic, asking for the channel, modules, license and version control, and optionally downloading the agent skills";
       };
     });
 
