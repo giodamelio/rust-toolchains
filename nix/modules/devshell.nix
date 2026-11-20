@@ -1,4 +1,8 @@
-{modules, ...}: {
+{
+  self,
+  modules,
+  ...
+}: {
   lib,
   flake-parts-lib,
   ...
@@ -8,6 +12,7 @@
   options.perSystem = flake-parts-lib.mkPerSystemOption ({
     config,
     pkgs,
+    system,
     ...
   }: let
     cfg = config.rust-toolchains.devShell;
@@ -34,6 +39,7 @@
           pkgs.cargo-nextest
           pkgs.alejandra
           pkgs.prek
+          self.packages.${system}.skills-cli
         ]
         ++ cfg.packages;
       inherit (cfg) shellHook;
