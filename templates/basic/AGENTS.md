@@ -21,10 +21,10 @@ To add a project-specific tool, append it to `rust-toolchains.devShell.packages`
 
 ## Install the agent skills
 
-`agent-skills.lock.json` lists the Rust agent skills this project uses and pins their source repo to one commit. The skill files live in `.claude/skills/`, which is gitignored. Commit only the lockfile.
+`agent-skills.lock.json` lists the Rust agent skills this project uses and pins their source repo to one commit. The skill files live in `.agents/skills/`, and `.claude/skills/<name>` is a relative symlink to each one. Commit the lockfile, the skill files and the symlinks.
 
 - Entering the devshell checks the installed skills against the lockfile, offline. If any are missing or stale, it prints the `gh skill install` command to run from the repo root. Run it yourself; nothing is downloaded automatically.
-- To add a skill, add `"name": null` to the lockfile's `skills` object and run `skills-bump` with the lockfile's current `ref`, which fills in its tree hash. To drop one, delete its entry and its `.claude/skills/<name>` directory.
+- To add a skill, add `"name": null` to the lockfile's `skills` object and run `skills-bump` with the lockfile's current `ref`, which fills in its tree hash. To drop one, delete its entry, its `.agents/skills/<name>` directory and its `.claude/skills/<name>` symlink.
 - Run `skills-bump` to move the pin to the source repo's latest release, or `skills-bump TAG` for a specific tag or commit. Then run the command the devshell prints.
 - Downloading needs GitHub CLI with the `gh skill` subcommand. `skills-bump` also needs `gh auth login`.
 - To opt out, delete `agent-skills.lock.json`, or set `rust-toolchains.skills.enable = false;`.

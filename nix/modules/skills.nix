@@ -14,8 +14,13 @@
 
     # The lockfile and skill dirs live in the working tree, not the store, so
     # they are found from the repo root at runtime.
+    depth = path: builtins.length (lib.splitString "/" path);
+    linkTarget = link: lib.concatStrings (lib.replicate (depth link) "../") + cfg.dir;
+
     prelude = ''
-      dirs=(${lib.escapeShellArgs cfg.dirs})
+      dir=${lib.escapeShellArg cfg.dir}
+      links=(${lib.escapeShellArgs cfg.linkDirs})
+      targets=(${lib.escapeShellArgs (map linkTarget cfg.linkDirs)})
 
       die() {
         echo "$(basename "$0"): $*" >&2
@@ -92,25 +97,37 @@
       };
 
     check = mkScript "skills-check" ''
-        find_lock || exit 0
-        require_lock
+          find_lock || exit 0
+          require_lock
 
-        for dir in "''${dirs[@]}"; do
           stale=()
           while IFS=$'\t' read -r name tree; do
             [ "$tree" = null ] && continue
-            is_current "$root/$dir/$name/SKILL.md" "$commit" "$tree" || stale+=("$name")
+            ok=1
+            is_current "$root/$dir/$name/SKILL.md" "$commit" "$tree" || ok=0
+            for i in "''${!links[@]}"; do
+              [ "$(readlink "$root/''${links[i]}/$name")" = "''${targets[i]}/$name" ] || ok=0
+            done
+            [ "$ok" = 1 ] || stale+=("$name")
           done < <(skill_entries)
-          [ "''${#stale[@]}" -eq 0 ] && continue
+          [ "''${#stale[@]}" -eq 0 ] && exit 0
 
           # gh refuses to overwrite an installed skill, and --force keeps files
-          # the old version had, so the command clears each one first.
+          # the old version had, so the command clears each one first. gh skill
+          # cannot symlink, so the per-agent dirs get relative links by hand.
+          clear="rm -rf \"$dir/\$s\""
+          link=""
+          mkdirs=""
+          for i in "''${!links[@]}"; do
+            clear+=" \"''${links[i]}/\$s\""
+            link+=" && ln -s \"''${targets[i]}/\$s\" \"''${links[i]}/\$s\""
+            mkdirs+=" ''${links[i]}"
+          done
           cat >&2 <<EOF
-      rust-toolchains: ''${#stale[@]} agent skills in ${cfg.lockFile} are missing from $dir or not at the pinned commit.
+      rust-toolchains: ''${#stale[@]} agent skills in ${cfg.lockFile} are missing or not at the pinned commit.
       Download them from the repo root with:
-        for s in ''${stale[*]}; do rm -rf "$dir/\$s" && gh skill install $repo "skills/\$s" --pin $commit --dir $dir; done
+        mkdir -p $dir$mkdirs && for s in ''${stale[*]}; do $clear && gh skill install $repo "skills/\$s" --pin $commit --dir $dir$link; done
       EOF
-        done
     '';
 
     bump = mkScript "skills-bump" ''
@@ -155,13 +172,20 @@
           A string rather than a Nix path because skills-bump rewrites it in the working tree.
         '';
       };
-      dirs = lib.mkOption {
+      dir = lib.mkOption {
+        type = lib.types.str;
+        default = ".agents/skills";
+        description = ''
+          Directory, relative to the repo root, that skills are installed into.
+          `.agents/skills` is read by Copilot, Codex, Cursor, Gemini CLI, OpenCode and others.
+        '';
+      };
+      linkDirs = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         default = [".claude/skills"];
         description = ''
-          Directories, relative to the repo root, that every skill is installed into.
-          `.claude/skills` is read by Claude Code; `.agents/skills` by Copilot, Codex, Cursor, Gemini CLI, OpenCode and others.
-          Keep them gitignored.
+          Directories, relative to the repo root, that get a relative symlink to each skill in `dir`,
+          for agents that do not read `.agents/skills`. `.claude/skills` is read by Claude Code.
         '';
       };
     };
