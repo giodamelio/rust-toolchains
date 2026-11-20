@@ -38,8 +38,8 @@
         done < <(jq -r '.skills | keys[]' "$lock")
       }
 
-      # Names become paths that skills-install deletes, so nothing that could
-      # escape the skill dir gets through.
+      # Names end up in an `rm -rf` the user is told to run, so nothing that
+      # could escape the skill dir gets through.
       valid_name() {
         [[ $1 =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]
       }
@@ -91,42 +91,26 @@
         text = prelude + text;
       };
 
-    install = mkScript "skills-install" ''
-      require_gh
-      require_lock
+    check = mkScript "skills-check" ''
+        find_lock || exit 0
+        require_lock
 
-      installed=0
-      current=0
-      while IFS=$'\t' read -r name tree; do
         for dir in "''${dirs[@]}"; do
-          target="$root/$dir"
-          if [ "$tree" = null ]; then
-            echo "skills-install: $name does not exist at $repo@$commit, so it is not installed" >&2
-            rm -rf "''${target:?}/$name"
-            continue
-          fi
-          if is_current "$target/$name/SKILL.md" "$commit" "$tree"; then
-            current=$((current + 1))
-            continue
-          fi
-          # gh refuses to overwrite without --force, and --force leaves files
-          # the old version had, so the stale copy goes first.
-          rm -rf "''${target:?}/$name"
-          if ! out=$(gh skill install "$repo" "skills/$name" --pin "$commit" --dir "$target" </dev/null 2>&1); then
-            printf '%s\n' "$out" >&2
-            die "gh skill install failed for $name"
-          fi
-          is_current "$target/$name/SKILL.md" "$commit" "$tree" \
-            || die "$dir/$name was installed but its SKILL.md does not record commit $commit and tree $tree"
-          echo "installed $dir/$name"
-          installed=$((installed + 1))
-        done
-      done < <(skill_entries)
+          stale=()
+          while IFS=$'\t' read -r name tree; do
+            [ "$tree" = null ] && continue
+            is_current "$root/$dir/$name/SKILL.md" "$commit" "$tree" || stale+=("$name")
+          done < <(skill_entries)
+          [ "''${#stale[@]}" -eq 0 ] && continue
 
-      echo "skills-install: $installed installed, $current already at $repo@$commit"
-      if [ "$installed" -gt 0 ]; then
-        echo "Skills are not verified by GitHub. Review them with: gh skill preview $repo <skill>@$commit"
-      fi
+          # gh refuses to overwrite an installed skill, and --force keeps files
+          # the old version had, so the command clears each one first.
+          cat >&2 <<EOF
+      rust-toolchains: ''${#stale[@]} agent skills in ${cfg.lockFile} are missing from $dir or not at the pinned commit.
+      Download them from the repo root with:
+        for s in ''${stale[*]}; do rm -rf "$dir/\$s" && gh skill install $repo "skills/\$s" --pin $commit --dir $dir; done
+      EOF
+        done
     '';
 
     bump = mkScript "skills-bump" ''
@@ -154,72 +138,14 @@
       write_lock "$new"
 
       echo "skills-bump: ${cfg.lockFile} now pins $repo@$ref ($new_commit)"
-      exec ${lib.getExe install}
-    '';
-
-    add = mkScript "skills-add" ''
-      [ "$#" -gt 0 ] || die "usage: skills-add SKILL..."
-      require_gh
-      require_lock
-
-      upstream=$(upstream_trees "$commit")
-      for name in "$@"; do
-        valid_name "$name" || die "invalid skill name: $name"
-        jq -e --arg name "$name" '.[$name] != null' <<<"$upstream" >/dev/null \
-          || die "$name does not exist in $repo@$commit"
-      done
-
-      new=$(jq --argjson up "$upstream" --args '
-        reduce $ARGS.positional[] as $name (.; .skills[$name] = $up[$name])
-      ' "$@" <"$lock")
-      write_lock "$new"
-      exec ${lib.getExe install}
-    '';
-
-    remove = mkScript "skills-remove" ''
-      [ "$#" -gt 0 ] || die "usage: skills-remove SKILL..."
-      require_lock
-
-      for name in "$@"; do
-        valid_name "$name" || die "invalid skill name: $name"
-        jq -e --arg name "$name" '.skills | has($name)' "$lock" >/dev/null \
-          || die "$name is not in ${cfg.lockFile}"
-      done
-
-      new=$(jq --args 'reduce $ARGS.positional[] as $name (.; del(.skills[$name]))' "$@" <"$lock")
-      write_lock "$new"
-      for name in "$@"; do
-        for dir in "''${dirs[@]}"; do
-          rm -rf "''${root:?}/$dir/$name"
-        done
-        echo "removed $name"
-      done
-    '';
-
-    check = mkScript "skills-check" ''
-      find_lock || exit 0
-
-      commit=$(jq -r '.commit' "$lock")
-      total=0
-      stale=0
-      while IFS=$'\t' read -r name tree; do
-        [ "$tree" = null ] && continue
-        for dir in "''${dirs[@]}"; do
-          total=$((total + 1))
-          is_current "$root/$dir/$name/SKILL.md" "$commit" "$tree" || stale=$((stale + 1))
-        done
-      done < <(skill_entries)
-
-      if [ "$stale" -gt 0 ]; then
-        echo "rust-toolchains: $stale of $total agent skills in ${cfg.lockFile} are missing or not at the pinned commit. Run skills-install." >&2
-      fi
+      exec ${lib.getExe check}
     '';
   in {
     options.rust-toolchains.skills = {
       enable = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Whether to add the skills-* scripts to the devshell and check the installed agent skills on shell entry.";
+        description = "Whether to check the installed agent skills against the lockfile on shell entry, offline, and add skills-bump to the devshell.";
       };
       lockFile = lib.mkOption {
         type = lib.types.str;
@@ -241,7 +167,7 @@
     };
 
     config = lib.mkIf cfg.enable {
-      rust-toolchains.devShell.packages = [install bump add remove];
+      rust-toolchains.devShell.packages = [bump];
       rust-toolchains.devShell.shellHook = lib.getExe check;
     };
   });

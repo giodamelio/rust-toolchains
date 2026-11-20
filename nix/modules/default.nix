@@ -18,15 +18,10 @@
     banner = mk "banner";
     unused-deps = mk "unused-deps";
     cargo-deny = mk "cargo-deny";
-  };
-  # Opt-in: these install things from outside the flake, so a project imports
-  # them by name rather than getting them from default.
-  optional = {
     skills = mk "skills";
   };
 in
   modules
-  // optional
   // {
     default = {
       key = "rust-toolchains#default";

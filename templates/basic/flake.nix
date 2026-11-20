@@ -17,10 +17,7 @@
     ...
   }:
     flake-parts.lib.mkFlake {inherit inputs;} {
-      imports = [
-        rust-toolchains.flakeModules.default
-        rust-toolchains.flakeModules.skills
-      ];
+      imports = [rust-toolchains.flakeModules.default];
 
       systems = ["x86_64-linux" "aarch64-linux" "aarch64-darwin"];
 

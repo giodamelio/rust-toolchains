@@ -21,13 +21,13 @@ To add a project-specific tool, append it to `rust-toolchains.devShell.packages`
 
 ## Install the agent skills
 
-`rust-toolchains.flakeModules.skills` installs the Rust agent skills listed in `agent-skills.lock.json`, which pins the source repo to one commit. The skill files go into `.claude/skills/`, which is gitignored. Commit only the lockfile.
+`agent-skills.lock.json` lists the Rust agent skills this project uses and pins their source repo to one commit. The skill files live in `.claude/skills/`, which is gitignored. Commit only the lockfile.
 
-- Run `skills-install` to fetch any missing or stale skills. Entering the devshell tells you when it is needed.
-- Run `skills-bump` to move the pin to the source repo's latest release, or `skills-bump TAG` for a specific tag or commit.
-- Run `skills-add NAME` or `skills-remove NAME` to change the list.
-- These need GitHub CLI with the `gh skill` subcommand on `PATH`. `skills-bump` and `skills-add` also need `gh auth login`.
-- To opt out, remove the `flakeModules.skills` import from `flake.nix` and delete `agent-skills.lock.json`.
+- Entering the devshell checks the installed skills against the lockfile, offline. If any are missing or stale, it prints the `gh skill install` command to run from the repo root. Run it yourself; nothing is downloaded automatically.
+- To add a skill, add `"name": null` to the lockfile's `skills` object and run `skills-bump` with the lockfile's current `ref`, which fills in its tree hash. To drop one, delete its entry and its `.claude/skills/<name>` directory.
+- Run `skills-bump` to move the pin to the source repo's latest release, or `skills-bump TAG` for a specific tag or commit. Then run the command the devshell prints.
+- Downloading needs GitHub CLI with the `gh skill` subcommand. `skills-bump` also needs `gh auth login`.
+- To opt out, delete `agent-skills.lock.json`, or set `rust-toolchains.skills.enable = false;`.
 
 ## Keep the devshell banner current
 
