@@ -53,6 +53,7 @@
     };
 
     config.checks = lib.mkIf cfg.enable {
+      rust-build = cfg.package;
       rust-fmt = mkCheck "fmt" "cargo fmt --check";
       rust-clippy = mkCheck "clippy" "cargo clippy --offline --all-targets -- -D warnings";
       rust-test = mkCheck "test" (lib.getExe config.rust-toolchains.testRunner);

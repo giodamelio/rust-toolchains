@@ -21,12 +21,10 @@
 
       systems = ["x86_64-linux" "aarch64-linux" "aarch64-darwin"];
 
-      perSystem = {pkgs, ...}: {
+      perSystem = {config, ...}: {
         rust-toolchains.channel = "stable";
 
-        # Built with nixpkgs' rustc: kache never runs in the sandbox, and this
-        # keeps the package buildable without rust-toolchains.
-        packages.default = pkgs.rustPlatform.buildRustPackage {
+        packages.default = config.rust-toolchains.rustPlatform.buildRustPackage {
           pname = "rust-project";
           version = "0.1.0";
           src = ./.;
