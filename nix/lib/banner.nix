@@ -25,7 +25,7 @@
       then "$'\\e[1;35m'${q title}$'\\e[0m'"
       else q title;
     body = pkgs.writeText "banner.txt" (lib.concatMapStrings
-      (c: "${paint "1;36" (pad c.command)}  ${paint "37" c.description}\n")
+      (c: "${paint "1;97" (pad c.command)}  ${paint "90" c.description}\n")
       commands);
   };
 
