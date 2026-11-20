@@ -79,10 +79,16 @@
           command = "cargo-deny-check";
           description = "Check advisories, licenses, bans and sources";
         }
-        ++ lib.optional (enabled "skills") {
-          command = "skills-bump [TAG]";
-          description = "Pin the agent skills to the latest release or TAG";
-        }
+        ++ lib.optionals (enabled "skills") [
+          {
+            command = "skills-install";
+            description = "Download the agent skills pinned in the lockfile";
+          }
+          {
+            command = "skills-bump [TAG]";
+            description = "Pin the agent skills to the latest release or TAG";
+          }
+        ]
         ++ lib.optional (enabled "checks") {
           command = "nix flake check";
           description = "Build, lint and test in the Nix sandbox";
