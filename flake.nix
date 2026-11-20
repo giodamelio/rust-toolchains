@@ -47,7 +47,29 @@
           pkgs.prek
           (import ./nix/bump-nightly.nix {inherit pkgs components systems;})
         ];
-        shellHook = prekLib.mkShellHook (prekLib.mkConfig [({id = "alejandra";} // prekLib.hooks.alejandra)]);
+        shellHook =
+          prekLib.mkShellHook (prekLib.mkConfig [({id = "alejandra";} // prekLib.hooks.alejandra)])
+          + import ./nix/lib/banner.nix {inherit (pkgs) lib pkgs;} {
+            title = "rust-toolchains";
+            commands = [
+              {
+                command = "nix flake update fenix";
+                description = "Bump stable to fenix's latest";
+              }
+              {
+                command = "bump-nightly [YYYY-MM-DD]";
+                description = "Bump the nightly pin in nightly.json";
+              }
+              {
+                command = "prek run --all-files";
+                description = "Run alejandra";
+              }
+              {
+                command = "nix flake check --all-systems";
+                description = "Evaluate every output on every system";
+              }
+            ];
+          };
       };
     });
 

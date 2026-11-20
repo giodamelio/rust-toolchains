@@ -19,6 +19,21 @@ It provides `cargo`, `rustc`, `clippy`, `rustfmt`, `rust-analyzer`, `cargo-nexte
 
 To add a project-specific tool, append it to `rust-toolchains.devShell.packages` in `flake.nix`.
 
+## Keep the devshell banner current
+
+Entering the devshell prints a box of common commands, titled with the crate name. When the project gains a CLI, script or workflow command someone will run often, add it to `rust-toolchains.banner.commands` in `flake.nix`:
+
+```nix
+rust-toolchains.banner.commands = [
+  {
+    command = "cargo run -- serve";
+    description = "Start the server";
+  }
+];
+```
+
+Remove entries when the command they describe goes away.
+
 ## Run the checks before you finish
 
 - `prek run --all-files` runs rustfmt, clippy and alejandra, the pre-commit hooks.
