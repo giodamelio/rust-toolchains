@@ -86,16 +86,54 @@
             exit 1
           }
 
-          # The project is found as the only entry cargo-generate creates in
-          # an empty staging dir, so a destination of the user's own, or
-          # --init's generating into it directly, would break that.
-          for arg in "$@"; do
-            case $arg in
+          # cargo-generate reads every placeholder before it copies anything, so
+          # the base template cannot be one of its questions; init takes it as
+          # its own flag and passes everything else through.
+          base="" silent=false args=()
+          while [ $# -gt 0 ]; do
+            case $1 in
+              # The project is found as the only entry cargo-generate creates
+              # in an empty staging dir, so a destination of the user's own, or
+              # --init's generating into it directly, would break that.
               --destination | --destination=* | --init)
-                die "$arg is not supported; cd to the directory that should contain the project and run init there"
+                die "$1 is not supported; cd to the directory that should contain the project and run init there"
                 ;;
+              --template)
+                [ $# -ge 2 ] || die "--template needs a value: basic or axum"
+                base=$2
+                shift 2
+                continue
+                ;;
+              --template=*)
+                base=''${1#--template=}
+                shift
+                continue
+                ;;
+              -d | --define)
+                case ''${2-} in
+                  template=*) die "choose the template with --template, not $1 template=..." ;;
+                esac
+                ;;
+              --define=template=* | -dtemplate=*)
+                die "choose the template with --template, not $1"
+                ;;
+              -s | --silent) silent=true ;;
             esac
+            args+=("$1")
+            shift
           done
+
+          if [ -z "$base" ]; then
+            if [ "$silent" = false ] && [ -t 0 ]; then
+              read -rp "Template (basic, axum) [basic]: " base || die "no template chosen"
+            fi
+            base=''${base:-basic}
+          fi
+          case $base in
+            basic) base_dir=${./templates/basic} ;;
+            axum) base_dir=${./templates/axum} ;;
+            *) die "unknown template '$base'; choose basic or axum" ;;
+          esac
 
           template=$(mktemp -d)
           staging=$(mktemp -d)
@@ -103,10 +141,26 @@
 
           # cargo-generate copies a template keeping its read-only store mode and
           # then fails writing the rendered files, so it gets a writable copy.
-          # The overlay's .liquid files replace basic's copies of the same name,
-          # so only the files with placeholders are duplicated.
-          cp -r --no-preserve=mode ${./templates/basic}/. "$template"
+          cp -r --no-preserve=mode "$base_dir"/. "$template"
           cp -r --no-preserve=mode ${./templates/init}/. "$template"
+
+          # Each template stays a plain project that `nix flake init` can use.
+          # Rather than keep a .liquid copy of its files that could drift from
+          # it, init turns the template's literal defaults into placeholders.
+          placeholder() {
+            local file=$template/$1 content
+            content=$(<"$file")
+            [[ $content == *"$2"* ]] \
+              || die "templates/$base/$1 no longer contains '$2', which init turns into a placeholder"
+            printf '%s\n' "''${content//"$2"/"$3"}" >"$file"
+          }
+          placeholder Cargo.toml rust-project '{{ project-name }}'
+          placeholder Cargo.toml 'publish = false' "$(<${./templates/init/fields/Cargo.toml.liquid})"
+          placeholder flake.nix '        rust-toolchains.channel = "stable";' "$(<${./templates/init/fields/flake.nix.liquid})"
+          # axum's flake reads the crate name from Cargo.toml instead.
+          if [ "$base" = basic ]; then
+            placeholder flake.nix 'pname = "rust-project";' 'pname = "{{ project-name }}";'
+          fi
 
           vcs_choices=()
           command -v jj >/dev/null && vcs_choices+=(jj)
@@ -119,7 +173,7 @@
           toml=''${toml//@VCS_DEFAULT@/''${vcs_choices[0]}}
           printf '%s\n' "$toml" >"$config"
 
-          cargo-generate generate --path "$template" --destination "$staging" --vcs none --no-workspace --force "$@"
+          cargo-generate generate --path "$template" --destination "$staging" --vcs none --no-workspace --force "''${args[@]}"
 
           shopt -s nullglob dotglob
           generated=("$staging"/*)
@@ -166,7 +220,7 @@
       init = {
         type = "app";
         program = pkgs.lib.getExe init;
-        meta.description = "Generate a new project from templates/basic, asking for the channel, modules, license and version control, and optionally downloading the agent skills";
+        meta.description = "Generate a new project from templates/basic or templates/axum, asking for the channel, modules, license and version control, and optionally downloading the agent skills";
       };
     });
 

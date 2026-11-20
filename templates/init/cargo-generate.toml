@@ -1,8 +1,10 @@
 [template]
 cargo_generate_version = ">=0.25.0"
-# Everything else comes from templates/basic and is copied unrendered, so a
-# stray `{{` there can never be mistaken for a placeholder.
+# Everything else comes from the chosen template and is copied unrendered, so
+# a stray `{{` there can never be mistaken for a placeholder.
 include = ["/flake.nix", "/Cargo.toml", "/LICENSE-MIT"]
+# The init wrapper has already spliced these into flake.nix and Cargo.toml.
+ignore = ["fields"]
 
 # cargo-generate does not move .git out of its temp dir, so a hook cannot
 # create the repo. This one only records the answers the wrapper acts on.

@@ -90,21 +90,24 @@
       lib.mapAttrs' (check: lib.nameValuePair "${name}-${channel}-${check}")
       (evalTemplate (tree name lockFile) channel).checks.${system};
 
-    # templates/init duplicates the files that carry placeholders, so its
-    # defaults must keep reproducing templates/basic exactly.
-    init-matches-basic = pkgs.runCommand "init-matches-basic" {} ''
-      # cargo-generate derives `authors` from $USER and aborts without it.
-      # vcs=none because the sandbox has no jj or git, and a repo would show
-      # up in the diff.
-      export HOME=$TMPDIR USER=nixbld
-      cd $TMPDIR
-      ${rust-toolchains.apps.${system}.init.program} --name rust-project --silent -d vcs=none
-      diff -r ${templateSrc "basic"} rust-project
-      touch $out
-    '';
+    # init turns each template's literal defaults into placeholders, so
+    # rendering its defaults must reproduce the template exactly.
+    initMatches = name:
+      pkgs.runCommand "init-matches-${name}" {} ''
+        # cargo-generate derives `authors` from $USER and aborts without it.
+        # vcs=none because the sandbox has no jj or git, and a repo would show
+        # up in the diff.
+        export HOME=$TMPDIR USER=nixbld
+        cd $TMPDIR
+        ${rust-toolchains.apps.${system}.init.program} --name rust-project --silent --template ${name} -d vcs=none
+        diff -r ${templateSrc name} rust-project
+        touch $out
+      '';
   in {
-    checks.${system} =
-      lib.concatMapAttrs (name: lockFile: checksFor name lockFile "stable" // checksFor name lockFile "nightly") lockFiles
-      // {inherit init-matches-basic;};
+    checks.${system} = lib.concatMapAttrs (name: lockFile:
+      checksFor name lockFile "stable"
+      // checksFor name lockFile "nightly"
+      // {"init-matches-${name}" = initMatches name;})
+    lockFiles;
   };
 }

@@ -17,19 +17,20 @@ nix run github:giodamelio/rust-toolchains#init
 
 ## Generate a project with init
 
-| Option           | Values                                                                                                 | Default                       |
-| ---------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------- |
-| `--name`         | crate name                                                                                             | asked                         |
-| `channel`        | `stable`, `nightly`                                                                                    | `stable`                      |
-| `modules`        | `prek`, `jjFix`, `checks`, `banner`, `unusedDeps`, `unusedDeps.devDependencies`, `cargoDeny`, `skills` | all                           |
-| `install_skills` | `true`, `false`                                                                                        | `false`                       |
-| `vcs`            | `jj`, `git`, `none` (those on `PATH`)                                                                  | `jj`, else `git`, else `none` |
-| `publish`        | `true`, `false`                                                                                        | `false`                       |
-| `license`        | `MIT OR Apache-2.0`, `MIT`, `Apache-2.0`                                                               | `MIT OR Apache-2.0`           |
+| Option           | Values                                                                                                 | Default                        |
+| ---------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------ |
+| `--template`     | `basic`, `axum`                                                                                        | asked, `basic` with `--silent` |
+| `--name`         | crate name                                                                                             | asked                          |
+| `channel`        | `stable`, `nightly`                                                                                    | `stable`                       |
+| `modules`        | `prek`, `jjFix`, `checks`, `banner`, `unusedDeps`, `unusedDeps.devDependencies`, `cargoDeny`, `skills` | all                            |
+| `install_skills` | `true`, `false`                                                                                        | `false`                        |
+| `vcs`            | `jj`, `git`, `none` (those on `PATH`)                                                                  | `jj`, else `git`, else `none`  |
+| `publish`        | `true`, `false`                                                                                        | `false`                        |
+| `license`        | `MIT OR Apache-2.0`, `MIT`, `Apache-2.0`                                                               | `MIT OR Apache-2.0`            |
 
 ```sh
 nix run github:giodamelio/rust-toolchains#init -- \
-  --name my-tool --silent \
+  --name my-tool --silent --template axum \
   -d channel=nightly -d modules=prek,checks,banner -d publish=true -d license=MIT
 ```
 
@@ -72,7 +73,7 @@ devShells.${system}.default = pkgs.mkShell {
 | ------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Bump stable                     | `nix flake update fenix`                                                                                        |
 | Bump nightly                    | `bump-nightly [YYYY-MM-DD]`                                                                                     |
-| Bump the templates' skills      | `skills-bump` in a project from `init`, then copy its `agent-skills.lock.json` to `templates/basic/`            |
+| Bump the templates' skills      | `skills-bump` in a project from `init`, then copy its `agent-skills.lock.json` to every `templates/*/`          |
 | Refresh `tests/axum/Cargo.lock` | `cargo generate-lockfile` in a project from `nix flake init -t .#axum`, then copy `Cargo.lock` to `tests/axum/` |
 | Check every output              | `nix flake check --all-systems`                                                                                 |
 | Check the templates             | `nix flake check '.?dir=tests'`                                                                                 |

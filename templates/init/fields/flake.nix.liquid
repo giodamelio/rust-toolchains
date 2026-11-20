@@ -1,0 +1,5 @@
+        rust-toolchains.channel = "{{ channel }}";
+{%- assign all_modules = "prek,jjFix,checks,banner,unusedDeps,unusedDeps.devDependencies,cargoDeny,skills" | split: "," %}
+{%- for module in all_modules %}{% unless modules contains module %}
+        rust-toolchains.{{ module }}.enable = false;
+{%- endunless %}{% endfor %}
