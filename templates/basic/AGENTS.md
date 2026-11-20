@@ -19,6 +19,16 @@ It provides `cargo`, `rustc`, `clippy`, `rustfmt`, `rust-analyzer`, `cargo-nexte
 
 To add a project-specific tool, append it to `rust-toolchains.devShell.packages` in `flake.nix`.
 
+## Install the agent skills
+
+`rust-toolchains.flakeModules.skills` installs the Rust agent skills listed in `agent-skills.lock.json`, which pins the source repo to one commit. The skill files go into `.claude/skills/`, which is gitignored. Commit only the lockfile.
+
+- Run `skills-install` to fetch any missing or stale skills. Entering the devshell tells you when it is needed.
+- Run `skills-bump` to move the pin to the source repo's latest release, or `skills-bump TAG` for a specific tag or commit.
+- Run `skills-add NAME` or `skills-remove NAME` to change the list.
+- These need GitHub CLI with the `gh skill` subcommand on `PATH`. `skills-bump` and `skills-add` also need `gh auth login`.
+- To opt out, remove the `flakeModules.skills` import from `flake.nix` and delete `agent-skills.lock.json`.
+
 ## Keep the devshell banner current
 
 Entering the devshell prints a box of common commands, titled with the crate name. When the project gains a CLI, script or workflow command someone will run often, add it to `rust-toolchains.banner.commands` in `flake.nix`:

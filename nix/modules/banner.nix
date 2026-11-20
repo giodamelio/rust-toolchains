@@ -79,6 +79,16 @@
           command = "cargo-deny-check";
           description = "Check advisories, licenses, bans and sources";
         }
+        ++ lib.optionals (enabled "skills") [
+          {
+            command = "skills-install";
+            description = "Install the agent skills pinned in ${config.rust-toolchains.skills.lockFile}";
+          }
+          {
+            command = "skills-bump [TAG]";
+            description = "Pin the agent skills to the latest release or TAG";
+          }
+        ]
         ++ lib.optional (enabled "checks") {
           command = "nix flake check";
           description = "Build, lint and test in the Nix sandbox";
