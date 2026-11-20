@@ -71,6 +71,10 @@
           command = "jj fix";
           description = "Format changed Rust and Nix files";
         }
+        ++ lib.optional (enabled "cargoDeny") {
+          command = "cargo-deny-check";
+          description = "Check advisories, licenses, bans and sources";
+        }
         ++ lib.optional (enabled "checks") {
           command = "nix flake check";
           description = "Build, lint and test in the Nix sandbox";
