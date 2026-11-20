@@ -25,6 +25,40 @@
       builtins.fetchurl {inherit (pin) url sha256;};
 
     components = ["rustc" "cargo" "clippy" "rustfmt" "rust-src" "rust-analyzer"];
+
+    # Built from pkgs.formats.toml rather than treefmt-nix, which would become
+    # an input of every downstream lock.
+    mkTreefmt = system: let
+      pkgs = nixpkgs.legacyPackages.${system};
+      inherit (pkgs) lib;
+      config = (pkgs.formats.toml {}).generate "treefmt.toml" {
+        excludes = ["flake.lock" "tests/flake.lock" "prek.toml" "result"];
+        formatter = {
+          alejandra = {
+            command = lib.getExe pkgs.alejandra;
+            includes = ["*.nix"];
+          };
+          # treefmt hands rustfmt bare files, so the edition Cargo.toml would
+          # supply has to be passed explicitly.
+          rustfmt = {
+            command = lib.getExe' self.packages.${system}.stable "rustfmt";
+            options = ["--edition" "2024"];
+            includes = ["*.rs"];
+          };
+          # gfm keeps tables and other GitHub syntax intact; --number keeps
+          # ordered lists as 1. 2. 3. instead of rewriting them all to 1.
+          mdformat = {
+            command = lib.getExe (pkgs.mdformat.withPlugins (p: [p.mdformat-gfm]));
+            options = ["--number"];
+            includes = ["*.md"];
+          };
+        };
+      };
+    in
+      pkgs.writeShellApplication {
+        name = "treefmt";
+        text = ''exec ${lib.getExe pkgs.treefmt} --config-file ${config} "$@"'';
+      };
   in {
     # Stable follows fenix as locked in this repo's flake.lock, so bumping it is
     # `nix flake update fenix`. Nightly is pinned by date in nightly.json.
@@ -37,22 +71,34 @@
       skills-cli = pkgs.callPackage ./nix/packages/skills-cli.nix {};
     });
 
-    formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.alejandra);
+    formatter = eachSystem mkTreefmt;
 
     devShells = eachSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system};
       prekLib = import ./nix/lib/prek.nix {inherit (pkgs) lib pkgs;};
+      treefmt = self.formatter.${system};
     in {
       default = pkgs.mkShell {
         packages = [
           pkgs.alejandra
+          treefmt
           pkgs.prek
           (import ./nix/bump-nightly.nix {inherit pkgs components systems;})
           (import ./nix/bump-skills-cli.nix {inherit pkgs;})
           self.packages.${system}.skills-cli
         ];
         shellHook =
-          prekLib.mkShellHook (prekLib.mkConfig [({id = "alejandra";} // prekLib.hooks.alejandra)])
+          prekLib.mkShellHook (prekLib.mkConfig [
+            {
+              id = "treefmt";
+              name = "treefmt";
+              entry = "${pkgs.lib.getExe treefmt} --fail-on-change";
+              language = "system";
+              files = "\\.(nix|rs|md)$";
+              stages = ["pre-commit" "pre-push"];
+              priority = 0;
+            }
+          ])
           + import ./nix/lib/banner.nix {inherit (pkgs) lib pkgs;} {
             title = "rust-toolchains";
             commands = [
@@ -69,8 +115,12 @@
                 description = "Bump skills-cli to its latest release";
               }
               {
+                command = "nix fmt";
+                description = "Format Nix, Rust and Markdown with treefmt";
+              }
+              {
                 command = "prek run --all-files";
-                description = "Run alejandra";
+                description = "Check formatting with treefmt";
               }
               {
                 command = "nix flake check --all-systems";

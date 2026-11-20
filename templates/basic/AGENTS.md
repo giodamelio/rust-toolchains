@@ -56,6 +56,7 @@ If the repo uses jj, git hooks do not fire on jj commands, so run the prek comma
 When you improve tooling that is not specific to this project, such as hooks, devshell packages, checks, lints or flake structure, it probably belongs in rust-toolchains so every project gets it.
 
 1. Ask the user whether to send the improvement upstream. Describe it in one or two sentences.
+
 2. If the user approves, send it with `agent-dms`. Name this project, say what changed and why, and include the relevant diff or file contents:
 
    ```sh
