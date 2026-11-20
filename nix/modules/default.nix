@@ -17,16 +17,10 @@
     formatter = mk "formatter";
     banner = mk "banner";
     unused-deps = mk "unused-deps";
-  };
-
-  # Opt-in because cargo-deny fails any workspace crate without a license
-  # field unless it sets `publish = false`, which the template does not.
-  optIn = {
     cargo-deny = mk "cargo-deny";
   };
 in
   modules
-  // optIn
   // {
     default = {
       key = "rust-toolchains#default";

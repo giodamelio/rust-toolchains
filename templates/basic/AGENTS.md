@@ -15,7 +15,7 @@ The user runs kache, a rustc wrapper cache that keys on the full `rustc -vV` out
 
 Enter it with `nix develop`, or let direnv load it from `.envrc`. Run every cargo command inside it.
 
-It provides `cargo`, `rustc`, `clippy`, `rustfmt`, `rust-analyzer`, `cargo-nextest`, `cargo-test-auto`, `cargo-unused-deps`, `alejandra` and `prek`.
+It provides `cargo`, `rustc`, `clippy`, `rustfmt`, `rust-analyzer`, `cargo-nextest`, `cargo-test-auto`, `cargo-unused-deps`, `cargo-deny`, `cargo-deny-check`, `alejandra` and `prek`.
 
 To add a project-specific tool, append it to `rust-toolchains.devShell.packages` in `flake.nix`.
 
@@ -37,7 +37,9 @@ Remove entries when the command they describe goes away.
 ## Run the checks before you finish
 
 - `prek run --all-files` runs rustfmt, clippy and alejandra, the pre-commit hooks.
-- `prek run --all-files --hook-stage pre-push` also runs the tests and `cargo-unused-deps`, which fails on dependencies flagged by Cargo's `unused_dependencies` lint.
+- `prek run --all-files --hook-stage pre-push` also runs the tests, `cargo-unused-deps`, which fails on dependencies flagged by Cargo's `unused_dependencies` lint, and `cargo-deny-check`, which checks advisories, licenses, banned crates and sources.
+- Keep `publish = false` in `Cargo.toml` unless the crate gets a `license` field. cargo-deny rejects unlicensed crates that could be published.
+- To change cargo-deny's policy, set `rust-toolchains.cargoDeny.settings` in `flake.nix`, or add a `deny.toml`, which takes precedence.
 - `nix flake check` runs fmt, clippy and tests in the Nix sandbox with the same toolchain.
 - `cargo-test-auto` runs `cargo nextest run` when `.config/nextest.toml` exists, and `cargo test` otherwise.
 
