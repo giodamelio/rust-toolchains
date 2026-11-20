@@ -67,6 +67,10 @@
           command = "cargo-unused-deps";
           description = "Fail on unused dependencies or any other warning";
         }
+        ++ lib.optional (enabled "unusedDeps" && config.rust-toolchains.unusedDeps.devDependencies.enable) {
+          command = "cargo-unused-dev-deps";
+          description = "Fail on unused dev-dependencies (cargo-shear)";
+        }
         ++ lib.optional (enabled "jjFix") {
           command = "jj fix";
           description = "Format changed Rust and Nix files";
