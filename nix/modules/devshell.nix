@@ -3,7 +3,7 @@
   flake-parts-lib,
   ...
 }: {
-  imports = [modules.toolchain];
+  imports = [modules.toolchain modules.test-runner];
 
   options.perSystem = flake-parts-lib.mkPerSystemOption ({
     config,
@@ -26,7 +26,16 @@
     };
 
     config.devShells.default = lib.mkDefault (pkgs.mkShell {
-      packages = [config.rust-toolchains.toolchain] ++ cfg.packages;
+      # Everything the hooks, checks and jj fix run, so each is also callable by hand.
+      packages =
+        [
+          config.rust-toolchains.toolchain
+          config.rust-toolchains.testRunner
+          pkgs.cargo-nextest
+          pkgs.alejandra
+          pkgs.prek
+        ]
+        ++ cfg.packages;
       inherit (cfg) shellHook;
     });
   });

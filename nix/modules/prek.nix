@@ -11,18 +11,13 @@
     ...
   }: let
     cfg = config.rust-toolchains.prek;
-    toml = pkgs.formats.toml {};
+    prekLib = import ../lib/prek.nix {inherit lib pkgs;};
 
     withToolchain = name: text:
       lib.getExe (pkgs.writeShellApplication {
         inherit name text;
         runtimeInputs = [config.rust-toolchains.toolchain];
       });
-
-    hooks =
-      lib.mapAttrsToList
-      (id: hook: {inherit id;} // builtins.removeAttrs hook ["enable"])
-      (lib.filterAttrs (_: hook: hook.enable) cfg.hooks);
   in {
     options.rust-toolchains.prek = {
       enable = lib.mkOption {
@@ -32,7 +27,7 @@
       };
       hooks = lib.mkOption {
         type = lib.types.attrsOf (lib.types.submodule {
-          freeformType = toml.type;
+          freeformType = (pkgs.formats.toml {}).type;
           options.enable = lib.mkOption {
             type = lib.types.bool;
             default = true;
@@ -52,6 +47,7 @@
       # Hook commands and flags adapted from git-hooks.nix (modules/hooks.nix).
       # Thanks to the cachix/git-hooks.nix project: https://github.com/cachix/git-hooks.nix
       rust-toolchains.prek.hooks = {
+        inherit (prekLib.hooks) alejandra;
         rustfmt = {
           name = "rustfmt";
           entry = withToolchain "prek-rustfmt" "cargo fmt --check";
@@ -70,14 +66,6 @@
           stages = ["pre-commit" "pre-push"];
           priority = 1;
         };
-        alejandra = {
-          name = "alejandra";
-          entry = "${lib.getExe pkgs.alejandra} --check";
-          language = "system";
-          files = "\\.nix$";
-          stages = ["pre-commit" "pre-push"];
-          priority = 0;
-        };
         test = {
           name = "test";
           entry = lib.getExe config.rust-toolchains.testRunner;
@@ -89,32 +77,13 @@
         };
       };
 
-      rust-toolchains.prek.configFile = toml.generate "prek.toml" {
-        default_install_hook_types = ["pre-commit" "pre-push"];
-        repos = [
-          {
-            repo = "local";
-            inherit hooks;
-          }
-        ];
-      };
+      rust-toolchains.prek.configFile = prekLib.mkConfig (
+        lib.mapAttrsToList
+        (id: hook: {inherit id;} // builtins.removeAttrs hook ["enable"])
+        (lib.filterAttrs (_: hook: hook.enable) cfg.hooks)
+      );
 
-      rust-toolchains.devShell = lib.mkIf cfg.enable {
-        packages = [pkgs.prek];
-        shellHook = ''
-          if root=$(${lib.getExe pkgs.git} rev-parse --show-toplevel 2>/dev/null); then
-            if [ -e "$root/prek.toml" ] && [ ! -L "$root/prek.toml" ]; then
-              echo "rust-toolchains: $root/prek.toml is not a symlink, so it was left alone. Move it into rust-toolchains.prek.hooks and delete it." >&2
-            else
-              # An indirect GC root keeps the hook binaries alive until the next shell entry replaces the link.
-              nix-store --add-root "$root/prek.toml" --indirect --realise ${cfg.configFile} >/dev/null
-              ${lib.getExe pkgs.prek} install --quiet --cd "$root"
-            fi
-          else
-            echo "rust-toolchains: no git repository found, so the prek hooks were not installed." >&2
-          fi
-        '';
-      };
+      rust-toolchains.devShell.shellHook = lib.mkIf cfg.enable (prekLib.mkShellHook cfg.configFile);
     };
   });
 }
