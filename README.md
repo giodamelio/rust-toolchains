@@ -1,6 +1,6 @@
 # rust-toolchains
 
-Pinned Rust toolchains, flake-parts modules and a project template.
+Pinned Rust toolchains, flake-parts modules and project templates.
 
 - Stable: fenix, at the revision in `flake.lock`.
 - Nightly: pinned by date in `nightly.json`.
@@ -10,7 +10,8 @@ Pinned Rust toolchains, flake-parts modules and a project template.
 ## Start a new project
 
 ```sh
-nix flake init -t github:giodamelio/rust-toolchains
+nix flake init -t github:giodamelio/rust-toolchains        # basic
+nix flake init -t github:giodamelio/rust-toolchains#axum   # axum HTTP server
 nix run github:giodamelio/rust-toolchains#init
 ```
 
@@ -67,13 +68,14 @@ devShells.${system}.default = pkgs.mkShell {
 
 ## Maintain this repo
 
-| Task                       | Command                                                                                              |
-| -------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Bump stable                | `nix flake update fenix`                                                                             |
-| Bump nightly               | `bump-nightly [YYYY-MM-DD]`                                                                          |
-| Bump the template's skills | `skills-bump` in a project from `init`, then copy its `agent-skills.lock.json` to `templates/basic/` |
-| Check every output         | `nix flake check --all-systems`                                                                      |
-| Check the template         | `nix flake check '.?dir=tests'`                                                                      |
-| Format                     | `nix fmt`                                                                                            |
+| Task                            | Command                                                                                                         |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Bump stable                     | `nix flake update fenix`                                                                                        |
+| Bump nightly                    | `bump-nightly [YYYY-MM-DD]`                                                                                     |
+| Bump the templates' skills      | `skills-bump` in a project from `init`, then copy its `agent-skills.lock.json` to `templates/basic/`            |
+| Refresh `tests/axum/Cargo.lock` | `cargo generate-lockfile` in a project from `nix flake init -t .#axum`, then copy `Cargo.lock` to `tests/axum/` |
+| Check every output              | `nix flake check --all-systems`                                                                                 |
+| Check the templates             | `nix flake check '.?dir=tests'`                                                                                 |
+| Format                          | `nix fmt`                                                                                                       |
 
 CI runs both checks and `alejandra --check .`.

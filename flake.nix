@@ -223,7 +223,7 @@
               }
               {
                 command = "nix flake check 'path:.?dir=tests'";
-                description = "Build and check the template against this checkout";
+                description = "Build and check the templates against this checkout";
               }
             ];
           };
@@ -237,6 +237,10 @@
       basic = {
         path = ./templates/basic;
         description = "Rust binary using the pinned rust-toolchains toolchain, flake-parts and prek hooks";
+      };
+      axum = {
+        path = ./templates/axum;
+        description = "axum HTTP server with systemd socket activation, Type=notify, a NixOS module and a VM test, on top of basic";
       };
     };
   };

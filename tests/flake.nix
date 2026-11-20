@@ -1,5 +1,5 @@
 {
-  description = "Builds and checks templates/basic against this checkout of rust-toolchains";
+  description = "Builds and checks the templates against this checkout of rust-toolchains";
 
   # A separate flake so flake-parts stays out of the root flake's inputs,
   # which every downstream lock inherits.
@@ -24,20 +24,34 @@
 
     system = "x86_64-linux";
     pkgs = nixpkgs.legacyPackages.${system};
+    inherit (pkgs) lib;
 
-    # Its own store path so edits elsewhere in the repo do not rebuild the checks.
-    template = builtins.path {
-      name = "template-basic";
-      path = "${rust-toolchains}/templates/basic";
+    # A template with dependencies cannot resolve them offline in the sandbox,
+    # so its lockfile is committed here; templates/ must never contain one.
+    lockFiles = {
+      basic = null;
+      axum = ./axum/Cargo.lock;
     };
 
+    # Its own store path so edits elsewhere in the repo do not rebuild the checks.
+    templateSrc = name:
+      builtins.path {
+        name = "template-${name}";
+        path = "${rust-toolchains}/templates/${name}";
+      };
+
     # Import-from-derivation: the template's flake.nix reads ./Cargo.lock
-    # relative to itself, and templates/ must never contain one.
-    tree = pkgs.runCommand "rust-toolchains-template-basic" {nativeBuildInputs = [rust-toolchains.packages.${system}.stable];} ''
-      cp -r ${template} $out
-      chmod -R u+w $out
-      HOME=$TMPDIR cargo generate-lockfile --offline --manifest-path $out/Cargo.toml
-    '';
+    # relative to itself.
+    tree = name: lockFile:
+      pkgs.runCommand "rust-toolchains-template-${name}" {nativeBuildInputs = [rust-toolchains.packages.${system}.stable];} ''
+        cp -r ${templateSrc name} $out
+        chmod -R u+w $out
+        ${
+          if lockFile == null
+          then "HOME=$TMPDIR cargo generate-lockfile --offline --manifest-path $out/Cargo.toml"
+          else "cp ${lockFile} $out/Cargo.lock"
+        }
+      '';
 
     # Wrapping mkFlake injects the channel override without editing the
     # template, whose perSystem sets channel = "stable" at normal priority.
@@ -57,7 +71,7 @@
           };
       };
 
-    evalTemplate = channel: let
+    evalTemplate = src: channel: let
       inputs = {
         inherit nixpkgs rust-toolchains;
         flake-parts = withChannel channel;
@@ -65,16 +79,16 @@
           outputs
           // {
             inherit inputs outputs;
-            outPath = tree;
+            outPath = src;
           };
       };
-      outputs = (import "${tree}/flake.nix").outputs inputs;
+      outputs = (import "${src}/flake.nix").outputs inputs;
     in
       outputs;
 
-    checksFor = channel:
-      pkgs.lib.mapAttrs' (name: pkgs.lib.nameValuePair "${channel}-${name}")
-      (evalTemplate channel).checks.${system};
+    checksFor = name: lockFile: channel:
+      lib.mapAttrs' (check: lib.nameValuePair "${name}-${channel}-${check}")
+      (evalTemplate (tree name lockFile) channel).checks.${system};
 
     # templates/init duplicates the files that carry placeholders, so its
     # defaults must keep reproducing templates/basic exactly.
@@ -85,10 +99,12 @@
       export HOME=$TMPDIR USER=nixbld
       cd $TMPDIR
       ${rust-toolchains.apps.${system}.init.program} --name rust-project --silent -d vcs=none
-      diff -r ${template} rust-project
+      diff -r ${templateSrc "basic"} rust-project
       touch $out
     '';
   in {
-    checks.${system} = checksFor "stable" // checksFor "nightly" // {inherit init-matches-basic;};
+    checks.${system} =
+      lib.concatMapAttrs (name: lockFile: checksFor name lockFile "stable" // checksFor name lockFile "nightly") lockFiles
+      // {inherit init-matches-basic;};
   };
 }
