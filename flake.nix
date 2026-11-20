@@ -76,6 +76,10 @@
                 command = "nix flake check --all-systems";
                 description = "Evaluate every output on every system";
               }
+              {
+                command = "nix flake check 'path:.?dir=tests'";
+                description = "Build and check the template against this checkout";
+              }
             ];
           };
       };
