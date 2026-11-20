@@ -19,17 +19,21 @@
 
     # Fetched at eval time rather than through toolchainOf, whose pkgs.fetchurl
     # would make other systems' outputs depend on import-from-derivation.
-    manifests =
-      builtins.mapAttrs
-      (_: pin: builtins.fetchurl {inherit (pin) url sha256;})
-      (builtins.fromJSON (builtins.readFile ./toolchains.json));
+    nightlyManifest = let
+      pin = builtins.fromJSON (builtins.readFile ./nightly.json);
+    in
+      builtins.fetchurl {inherit (pin) url sha256;};
 
     components = ["rustc" "cargo" "clippy" "rustfmt" "rust-src" "rust-analyzer"];
   in {
-    packages = eachSystem (system:
-      builtins.mapAttrs
-      (_: manifest: (fenix.packages.${system}.fromManifestFile manifest).withComponents components)
-      manifests);
+    # Stable follows fenix as locked in this repo's flake.lock, so bumping it is
+    # `nix flake update fenix`. Nightly is pinned by date in nightly.json.
+    packages = eachSystem (system: let
+      fenixPkgs = fenix.packages.${system};
+    in {
+      stable = fenixPkgs.stable.withComponents components;
+      nightly = (fenixPkgs.fromManifestFile nightlyManifest).withComponents components;
+    });
 
     formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.alejandra);
 
@@ -41,7 +45,7 @@
         packages = [
           pkgs.alejandra
           pkgs.prek
-          (import ./nix/bump-toolchain.nix {inherit pkgs components systems;})
+          (import ./nix/bump-nightly.nix {inherit pkgs components systems;})
         ];
         shellHook = prekLib.mkShellHook (prekLib.mkConfig [({id = "alejandra";} // prekLib.hooks.alejandra)]);
       };
