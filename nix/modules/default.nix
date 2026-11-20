@@ -16,6 +16,7 @@
     checks = mk "checks";
     formatter = mk "formatter";
     banner = mk "banner";
+    unused-deps = mk "unused-deps";
   };
 in
   modules

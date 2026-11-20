@@ -63,6 +63,10 @@
             description = "Run the pre-commit hooks plus tests";
           }
         ]
+        ++ lib.optional (enabled "unusedDeps") {
+          command = "cargo-unused-deps";
+          description = "Fail on unused dependencies or any other warning";
+        }
         ++ lib.optional (enabled "jjFix") {
           command = "jj fix";
           description = "Format changed Rust and Nix files";
