@@ -1,0 +1,52 @@
+[template]
+cargo_generate_version = ">=0.25.0"
+# Everything else comes from templates/basic and is copied unrendered, so a
+# stray `{{` there can never be mistaken for a placeholder.
+include = ["/flake.nix", "/Cargo.toml", "/LICENSE-MIT"]
+
+[placeholders.channel]
+type = "string"
+prompt = "Rust channel"
+choices = ["stable", "nightly"]
+default = "stable"
+
+# One multi-select rather than a bool per module: a single prompt
+# interactively, and `-d disable=a,b` fails loudly on any unknown name.
+[placeholders.disable]
+type = "array"
+prompt = "Modules to disable (space toggles, enter confirms)"
+choices = [
+  { value = "prek", label = "prek: git hooks from prek.toml" },
+  { value = "jjFix", label = "jjFix: jj fix tools in the repo config" },
+  { value = "checks", label = "checks: fmt, clippy and test flake checks" },
+  { value = "banner", label = "banner: devshell command box" },
+  { value = "unusedDeps", label = "unusedDeps: unused dependency pre-push hook" },
+  { value = "unusedDeps.devDependencies", label = "unusedDeps.devDependencies: unused dev-dependency pre-push hook" },
+  { value = "cargoDeny", label = "cargoDeny: cargo-deny pre-push hook" },
+  { value = "skills", label = "skills: agent skills lockfile check" },
+]
+default = []
+
+[placeholders.publish]
+type = "bool"
+prompt = "Publish this crate (adds a license instead of publish = false)?"
+default = false
+
+[conditional.'publish'.placeholders.license]
+type = "string"
+prompt = "License"
+choices = ["MIT OR Apache-2.0", "MIT", "Apache-2.0"]
+default = "MIT OR Apache-2.0"
+
+[conditional.'!publish']
+ignore = ["LICENSE-MIT", "LICENSE-APACHE"]
+
+# Evaluated on the second pass, once the conditional license placeholder is set.
+[conditional.'publish && license == "MIT"']
+ignore = ["LICENSE-APACHE"]
+
+[conditional.'publish && license == "Apache-2.0"']
+ignore = ["LICENSE-MIT"]
+
+[conditional.'disable.contains("skills")']
+ignore = ["agent-skills.lock.json"]

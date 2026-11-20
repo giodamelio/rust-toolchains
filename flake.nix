@@ -71,6 +71,31 @@
 
     formatter = eachSystem mkTreefmt;
 
+    apps = eachSystem (system: let
+      pkgs = nixpkgs.legacyPackages.${system};
+      init = pkgs.writeShellApplication {
+        name = "init";
+        runtimeInputs = [pkgs.cargo-generate pkgs.coreutils];
+        # cargo-generate copies a template keeping its read-only store mode and
+        # then fails writing the rendered files, so it gets a writable copy.
+        # The overlay's .liquid files replace basic's copies of the same name,
+        # so only the files with placeholders are duplicated.
+        text = ''
+          template=$(mktemp -d)
+          trap 'rm -rf "$template"' EXIT
+          cp -r --no-preserve=mode ${./templates/basic}/. "$template"
+          cp -r --no-preserve=mode ${./templates/init}/. "$template"
+          cargo-generate generate --path "$template" --vcs none --no-workspace --force "$@"
+        '';
+      };
+    in {
+      init = {
+        type = "app";
+        program = pkgs.lib.getExe init;
+        meta.description = "Generate a new project from templates/basic, asking for the channel, modules and license";
+      };
+    });
+
     devShells = eachSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system};
       prekLib = import ./nix/lib/prek.nix {inherit (pkgs) lib pkgs;};
@@ -98,6 +123,10 @@
           + import ./nix/lib/banner.nix {inherit (pkgs) lib pkgs;} {
             title = "rust-toolchains";
             commands = [
+              {
+                command = "nix run .#init";
+                description = "Generate a new project interactively";
+              }
               {
                 command = "nix flake update fenix";
                 description = "Bump stable to fenix's latest";
