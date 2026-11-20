@@ -39,6 +39,16 @@
 
     formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.alejandra);
 
+    devShells = eachSystem (system: let
+      pkgs = nixpkgs.legacyPackages.${system};
+      prekLib = import ./nix/lib/prek.nix {inherit (pkgs) lib pkgs;};
+    in {
+      default = pkgs.mkShell {
+        packages = [pkgs.alejandra pkgs.prek];
+        shellHook = prekLib.mkShellHook (prekLib.mkConfig [({id = "alejandra";} // prekLib.hooks.alejandra)]);
+      };
+    });
+
     flakeModules = import ./nix/modules {inherit self;};
 
     templates = {
