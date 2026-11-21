@@ -36,6 +36,14 @@
         });
         description = "Local prek hooks, keyed by hook id. Other attributes are written to prek.toml as-is.";
       };
+      allHooksInPreCommit = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = ''
+          Whether every pre-push hook also runs in the pre-commit stage, so `prek run --all-files` runs them all.
+          Useful in jj repos, where git hooks never fire and a push alias runs the pre-commit stage by hand.
+        '';
+      };
       configFile = lib.mkOption {
         type = lib.types.package;
         readOnly = true;
@@ -79,7 +87,12 @@
 
       rust-toolchains.prek.configFile = prekLib.mkConfig (
         lib.mapAttrsToList
-        (id: hook: {inherit id;} // builtins.removeAttrs hook ["enable"])
+        (id: hook:
+          {inherit id;}
+          // builtins.removeAttrs hook ["enable"]
+          // lib.optionalAttrs (cfg.allHooksInPreCommit && lib.elem "pre-push" (hook.stages or []) && !lib.elem "pre-commit" hook.stages) {
+            stages = ["pre-commit"] ++ hook.stages;
+          })
         (lib.filterAttrs (_: hook: hook.enable) cfg.hooks)
       );
 

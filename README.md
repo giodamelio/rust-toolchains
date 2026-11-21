@@ -55,7 +55,7 @@ devShells.${system}.default = pkgs.mkShell {
 | `toolchain`   | the pinned toolchain and a matching `rustPlatform`                            | `channel`, `toolchain`, `rustPlatform`                                                   |
 | `test-runner` | `cargo-test-auto` (nextest if `.config/nextest.toml`)                         | `testRunner`                                                                             |
 | `devshell`    | `devShells.default`                                                           | `devShell.packages`, `devShell.shellHook`                                                |
-| `prek`        | pre-commit and pre-push hooks                                                 | `prek.enable`, `prek.hooks.<id>`                                                         |
+| `prek`        | pre-commit and pre-push hooks                                                 | `prek.enable`, `prek.hooks.<id>`, `prek.allHooksInPreCommit`                             |
 | `jj-fix`      | `jj fix` tools for rustfmt and alejandra                                      | `jjFix.enable`, `jjFix.edition`, `jjFix.tools.<name>`                                    |
 | `checks`      | `rust-build`, `rust-fmt`, `rust-clippy`, `rust-test`                          | `checks.enable`, `checks.package`, `checks.nativeBuildInputs`, `checks.buildInputs`      |
 | `formatter`   | `formatter` set to alejandra                                                  |                                                                                          |

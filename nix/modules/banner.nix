@@ -53,7 +53,7 @@
             description = "Run tests (nextest if .config/nextest.toml exists)";
           }
         ]
-        ++ lib.optionals (enabled "prek") [
+        ++ lib.optionals (enabled "prek" && !config.rust-toolchains.prek.allHooksInPreCommit) [
           {
             command = "prek run --all-files";
             description = "Run rustfmt, clippy and alejandra";
@@ -63,6 +63,10 @@
             description = "Run the pre-commit hooks plus tests";
           }
         ]
+        ++ lib.optional (enabled "prek" && config.rust-toolchains.prek.allHooksInPreCommit) {
+          command = "prek run --all-files";
+          description = "Run every hook, tests included";
+        }
         ++ lib.optional (enabled "unusedDeps") {
           command = "cargo-unused-deps";
           description = "Fail on unused dependencies or any other warning";

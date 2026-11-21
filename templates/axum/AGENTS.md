@@ -127,7 +127,7 @@ On `x86_64-linux`, `nix flake check` runs the `nixos-vm` test.
 
 <!-- module:prek -->
 
-If the repo uses jj, git hooks do not fire on jj commands, so run the prek commands yourself.
+If the repo uses jj, git hooks do not fire on jj commands, so run the prek commands yourself. To have `prek run --all-files` run the pre-push hooks too, set `rust-toolchains.prek.allHooksInPreCommit = true;` in `flake.nix`.
 
 `prek.toml` is generated on shell entry and gitignored. To change hooks, edit `rust-toolchains.prek.hooks` in `flake.nix`, never `prek.toml`.
 
