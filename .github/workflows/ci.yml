@@ -28,4 +28,4 @@ jobs:
       # The tests flake loads the whole checkout through getFlake, so it must be
       # addressed as a subdirectory of the root flake, not as ./tests.
       - run: nix flake check '.?dir=tests'
-      - run: nix run nixpkgs#alejandra -- --check .
+      - run: nix fmt -- --fail-on-change
