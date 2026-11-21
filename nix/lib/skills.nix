@@ -4,6 +4,9 @@
   lockFile ? "agent-skills.lock.json",
   dir ? ".agents/skills",
   linkDirs ? [".claude/skills"],
+  # rust-toolchains bumps its templates' lockfiles without installing their
+  # skills, so checking for installed skills there would always complain.
+  checkAfterBump ? true,
 }: let
   # The lockfile and skill dirs live in the working tree, not the store, so
   # they are found from the repo root at runtime.
@@ -189,6 +192,6 @@ in rec {
     write_lock "$new"
 
     echo "skills-bump: ${lockFile} now pins $repo@$ref ($new_commit)"
-    exec ${lib.getExe check}
+    ${lib.optionalString checkAfterBump "exec ${lib.getExe check}"}
   '';
 }

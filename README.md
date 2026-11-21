@@ -77,7 +77,7 @@ devShells.${system}.default = pkgs.mkShell {
 | ------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Bump stable                     | `nix flake update fenix`                                                                                        |
 | Bump nightly                    | `bump-nightly [YYYY-MM-DD]`                                                                                     |
-| Bump the templates' skills      | `skills-bump` in a project from `init`, then copy its `agent-skills.lock.json` to every `templates/*/`          |
+| Bump the templates' skills      | `bump-template-skills [TAG]`                                                                                    |
 | Refresh `tests/axum/Cargo.lock` | `cargo generate-lockfile` in a project from `nix flake init -t .#axum`, then copy `Cargo.lock` to `tests/axum/` |
 | Check every output              | `nix flake check --all-systems`                                                                                 |
 | Check the templates             | `nix flake check '.?dir=tests'`                                                                                 |

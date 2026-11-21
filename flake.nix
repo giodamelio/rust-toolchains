@@ -267,6 +267,7 @@
           treefmt
           pkgs.prek
           (import ./nix/bump-nightly.nix {inherit pkgs components systems;})
+          (import ./nix/bump-template-skills.nix {inherit pkgs;})
         ];
         shellHook =
           prekLib.mkShellHook (prekLib.mkConfig [
@@ -294,6 +295,10 @@
               {
                 command = "bump-nightly [YYYY-MM-DD]";
                 description = "Bump the nightly pin in nightly.json";
+              }
+              {
+                command = "bump-template-skills [TAG]";
+                description = "Bump every template's agent skills lockfile";
               }
               {
                 command = "nix fmt";
