@@ -15,7 +15,14 @@ The user runs kache, a rustc wrapper cache that keys on the full `rustc -vV` out
 
 Enter it with `nix develop`, or let direnv load it from `.envrc`. Run every cargo command inside it.
 
-It provides `cargo`, `rustc`, `clippy`, `rustfmt`, `rust-analyzer`, `cargo-nextest`, `cargo-test-auto`, `cargo-unused-deps`, `cargo-shear`, `cargo-unused-dev-deps`, `cargo-deny`, `cargo-deny-check`, `alejandra` and `prek`.
+It provides:
+
+- `cargo`, `rustc`, `clippy`, `rustfmt` and `rust-analyzer`, from the pinned toolchain
+- `cargo-nextest` and `cargo-test-auto`
+- `alejandra` and `prek`
+- `cargo-unused-deps`, `cargo-shear` and `cargo-unused-dev-deps`
+- `cargo-deny` and `cargo-deny-check`
+- `skills-install` and `skills-bump`
 
 To add a project-specific tool, append it to `rust-toolchains.devShell.packages` in `flake.nix`.
 
