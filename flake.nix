@@ -79,7 +79,7 @@
       # the user's own versions and config, and only offered if installed.
       init = pkgs.writeShellApplication {
         name = "init";
-        runtimeInputs = [pkgs.cargo-generate pkgs.coreutils pkgs.gum];
+        runtimeInputs = [pkgs.cargo-generate pkgs.coreutils pkgs.gum pkgs.jq];
         text = ''
           die() {
             echo "init: $*" >&2
@@ -198,6 +198,12 @@
           toml=$(<"$config")
           toml=''${toml//'"@VCS_CHOICES@"'/''${quoted%, }}
           toml=''${toml//@VCS_DEFAULT@/''${vcs_choices[0]}}
+          skill_count=$(jq -e '.skills | length' "$template/agent-skills.lock.json") \
+            || die "could not count the skills in templates/$base/agent-skills.lock.json"
+          # skills-install takes about 2.5 s per skill.
+          skill_minutes=$(((skill_count * 5 + 60) / 120))
+          toml=''${toml//@SKILL_COUNT@/$skill_count}
+          toml=''${toml//@SKILL_MINUTES@/$((skill_minutes > 0 ? skill_minutes : 1))}
           printf '%s\n' "$toml" >"$config"
 
           # Its progress lines go to stdout and name the staging dir, which is an

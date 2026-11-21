@@ -35,9 +35,10 @@ choices = [
 ]
 default = ["prek", "jjFix", "checks", "banner", "unusedDeps", "unusedDeps.devDependencies", "cargoDeny", "skills"]
 
+# The init wrapper fills in both counts from the base template's lockfile.
 [conditional.'modules.contains("skills")'.placeholders.install_skills]
 type = "bool"
-prompt = "Download the agent skills now (about 44, with gh skill, takes about 2 minutes)?"
+prompt = "Download the @SKILL_COUNT@ agent skills now with gh skill (takes about @SKILL_MINUTES@ min)?"
 default = false
 
 # cargo-generate defaults are static, so the init wrapper swaps both tokens
