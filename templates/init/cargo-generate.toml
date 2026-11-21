@@ -28,12 +28,13 @@ choices = [
   { value = "jjFix", label = "jjFix: jj fix tools in the repo config" },
   { value = "checks", label = "checks: fmt, clippy and test flake checks" },
   { value = "banner", label = "banner: devshell command box" },
-  { value = "unusedDeps", label = "unusedDeps: unused dependency pre-push hook" },
-  { value = "unusedDeps.devDependencies", label = "unusedDeps.devDependencies: unused dev-dependency pre-push hook" },
+  # The dev-dependency check is not offered on its own because it does nothing
+  # without unusedDeps.
+  { value = "unusedDeps", label = "unusedDeps: unused dependency and dev-dependency pre-push hooks" },
   { value = "cargoDeny", label = "cargoDeny: cargo-deny pre-push hook" },
   { value = "skills", label = "skills: agent skills lockfile check" },
 ]
-default = ["prek", "jjFix", "checks", "banner", "unusedDeps", "unusedDeps.devDependencies", "cargoDeny", "skills"]
+default = ["prek", "jjFix", "checks", "banner", "unusedDeps", "cargoDeny", "skills"]
 
 # The init wrapper fills in both counts from the base template's lockfile.
 [conditional.'modules.contains("skills")'.placeholders.install_skills]

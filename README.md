@@ -21,16 +21,16 @@ nix run github:giodamelio/rust-toolchains#init
 
 ## Generate a project with init
 
-| Option           | Values                                                                                                 | Default                        |
-| ---------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------ |
-| `--template`     | `basic`, `axum`                                                                                        | asked, `basic` with `--silent` |
-| `--name`         | crate name                                                                                             | asked                          |
-| `channel`        | `stable`, `nightly`                                                                                    | `stable`                       |
-| `modules`        | `prek`, `jjFix`, `checks`, `banner`, `unusedDeps`, `unusedDeps.devDependencies`, `cargoDeny`, `skills` | all                            |
-| `install_skills` | `true`, `false`                                                                                        | `false`                        |
-| `vcs`            | `jj`, `git`, `none` (those on `PATH`)                                                                  | `jj`, else `git`, else `none`  |
-| `publish`        | `true`, `false`                                                                                        | `false`                        |
-| `license`        | `MIT OR Apache-2.0`, `MIT`, `Apache-2.0`                                                               | `MIT OR Apache-2.0`            |
+| Option           | Values                                                                   | Default                        |
+| ---------------- | ------------------------------------------------------------------------ | ------------------------------ |
+| `--template`     | `basic`, `axum`                                                          | asked, `basic` with `--silent` |
+| `--name`         | crate name                                                               | asked                          |
+| `channel`        | `stable`, `nightly`                                                      | `stable`                       |
+| `modules`        | `prek`, `jjFix`, `checks`, `banner`, `unusedDeps`, `cargoDeny`, `skills` | all                            |
+| `install_skills` | `true`, `false`                                                          | `false`                        |
+| `vcs`            | `jj`, `git`, `none` (those on `PATH`)                                    | `jj`, else `git`, else `none`  |
+| `publish`        | `true`, `false`                                                          | `false`                        |
+| `license`        | `MIT OR Apache-2.0`, `MIT`, `Apache-2.0`                                 | `MIT OR Apache-2.0`            |
 
 ```sh
 nix run github:giodamelio/rust-toolchains#init -- \
