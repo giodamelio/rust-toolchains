@@ -8,9 +8,9 @@ An axum HTTP server on [rust-toolchains](https://github.com/giodamelio/rust-tool
 - Run the server: `cargo run`, which listens on `LISTEN_ADDR`, by default `127.0.0.1:8000`.
 - Test: `cargo-test-auto`.
 - Create the lockfile, then commit it: `nix develop -c cargo generate-lockfile`.
-- Run the pre-commit hooks: `prek run --all-files`.
-- Run the pre-push hooks: `prek run --all-files --hook-stage pre-push`.
-- Check in the Nix sandbox: `nix flake check`.
+- Run the pre-commit hooks: `prek run --all-files`. <!-- module:prek -->
+- Run the pre-push hooks: `prek run --all-files --hook-stage pre-push`. <!-- module:prek -->
+- Check in the Nix sandbox: `nix flake check`. <!-- module:checks -->
 - Run the NixOS VM test, which needs KVM: `nix build .#checks.x86_64-linux.nixos-vm`.
 - Update the tooling: `nix flake update rust-toolchains`.
 

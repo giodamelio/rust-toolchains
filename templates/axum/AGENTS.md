@@ -67,11 +67,13 @@ It provides:
 - `cargo`, `rustc`, `clippy`, `rustfmt` and `rust-analyzer`, from the pinned toolchain
 - `cargo-nextest` and `cargo-test-auto`
 - `alejandra` and `prek`
-- `cargo-unused-deps`, `cargo-shear` and `cargo-unused-dev-deps`
-- `cargo-deny` and `cargo-deny-check`
-- `skills-install` and `skills-bump`
+- `cargo-unused-deps`, `cargo-shear` and `cargo-unused-dev-deps` <!-- module:unusedDeps -->
+- `cargo-deny` and `cargo-deny-check` <!-- module:cargoDeny -->
+- `skills-install` and `skills-bump` <!-- module:skills -->
 
 To add a project-specific tool, append it to `rust-toolchains.devShell.packages` in `flake.nix`.
+
+<!-- module:skills -->
 
 ## Install the agent skills
 
@@ -83,6 +85,10 @@ To add a project-specific tool, append it to `rust-toolchains.devShell.packages`
 - Run `skills-bump` to move the pin to the source repo's latest release, or `skills-bump TAG` for a specific tag or commit. Then run `skills-install`.
 - `skills-install` needs GitHub CLI with the `gh skill` subcommand. `skills-bump` also needs `gh auth login`.
 - To opt out, delete `agent-skills.lock.json`, or set `rust-toolchains.skills.enable = false;`.
+
+<!-- /module:skills -->
+
+<!-- module:banner -->
 
 ## Keep the devshell banner current
 
@@ -99,19 +105,39 @@ rust-toolchains.banner.commands = [
 
 Remove entries when the command they describe goes away.
 
+<!-- /module:banner -->
+
 ## Run the checks before you finish
 
-- `prek run --all-files` runs rustfmt, clippy and alejandra, the pre-commit hooks.
-- `prek run --all-files --hook-stage pre-push` also runs the tests, `cargo-unused-deps`, which fails on dependencies flagged by Cargo's `unused_dependencies` lint, `cargo-unused-dev-deps`, which runs cargo-shear for the dev-dependencies that lint skips, and `cargo-deny-check`, which checks advisories, licenses, banned crates and sources.
-- To keep a dev-dependency that cargo-shear wrongly reports as unused, add it to `[package.metadata.cargo-shear] ignored = ["crate-name"]` in that crate's `Cargo.toml`.
-- Keep `publish = false` in `Cargo.toml` unless the crate gets a `license` field. cargo-deny rejects unlicensed crates that could be published.
-- To change cargo-deny's policy, set `rust-toolchains.cargoDeny.settings` in `flake.nix`, or add a `deny.toml`, which takes precedence.
-- `nix flake check` runs fmt, clippy and tests in the Nix sandbox with the same toolchain, plus the `nixos-vm` test on `x86_64-linux`.
+- `prek run --all-files` runs rustfmt, clippy and alejandra, the pre-commit hooks. <!-- module:prek -->
+- `prek run --all-files --hook-stage pre-push` also runs the pre-push hooks, which are the commands below. <!-- module:prek -->
 - `cargo-test-auto` runs `cargo nextest run` when `.config/nextest.toml` exists, and `cargo test` otherwise.
+- `cargo-unused-deps` fails on dependencies flagged by Cargo's `unused_dependencies` lint. <!-- module:unusedDeps -->
+- `cargo-unused-dev-deps` runs cargo-shear for the dev-dependencies that lint skips. To keep a dev-dependency that cargo-shear wrongly reports as unused, add it to `[package.metadata.cargo-shear] ignored = ["crate-name"]` in that crate's `Cargo.toml`. <!-- module:unusedDeps -->
+- `cargo-deny-check` checks advisories, licenses, banned crates and sources. To change its policy, set `rust-toolchains.cargoDeny.settings` in `flake.nix`, or add a `deny.toml`, which takes precedence. <!-- module:cargoDeny -->
+- Keep `publish = false` in `Cargo.toml` unless the crate gets a `license` field. cargo-deny rejects unlicensed crates that could be published. <!-- module:cargoDeny -->
 
-If the repo uses jj, git hooks do not fire on jj commands, so run the prek commands yourself. `jj fix` formats Rust and Nix files with the same tools.
+<!-- module:checks -->
+
+`nix flake check` runs fmt, clippy and tests in the Nix sandbox with the same toolchain.
+
+<!-- /module:checks -->
+
+On `x86_64-linux`, `nix flake check` runs the `nixos-vm` test.
+
+<!-- module:prek -->
+
+If the repo uses jj, git hooks do not fire on jj commands, so run the prek commands yourself.
 
 `prek.toml` is generated on shell entry and gitignored. To change hooks, edit `rust-toolchains.prek.hooks` in `flake.nix`, never `prek.toml`.
+
+<!-- /module:prek -->
+
+<!-- module:jjFix -->
+
+If the repo uses jj, `jj fix` formats Rust and Nix files with rustfmt and alejandra.
+
+<!-- /module:jjFix -->
 
 ## Commit the lockfile
 

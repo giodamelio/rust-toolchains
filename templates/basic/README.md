@@ -8,9 +8,9 @@ A Rust binary on [rust-toolchains](https://github.com/giodamelio/rust-toolchains
 - Build and run: `cargo run`.
 - Test: `cargo-test-auto`.
 - Create the lockfile, then commit it: `nix develop -c cargo generate-lockfile`.
-- Run the pre-commit hooks: `prek run --all-files`.
-- Run the pre-push hooks: `prek run --all-files --hook-stage pre-push`.
-- Check in the Nix sandbox: `nix flake check`.
+- Run the pre-commit hooks: `prek run --all-files`. <!-- module:prek -->
+- Run the pre-push hooks: `prek run --all-files --hook-stage pre-push`. <!-- module:prek -->
+- Check in the Nix sandbox: `nix flake check`. <!-- module:checks -->
 - Update the tooling: `nix flake update rust-toolchains`.
 
 ## Configure the project

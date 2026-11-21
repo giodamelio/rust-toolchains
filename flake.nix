@@ -79,7 +79,7 @@
       # the user's own versions and config, and only offered if installed.
       init = pkgs.writeShellApplication {
         name = "init";
-        runtimeInputs = [pkgs.cargo-generate pkgs.coreutils pkgs.gum pkgs.jq];
+        runtimeInputs = [pkgs.cargo-generate pkgs.coreutils pkgs.gnugrep pkgs.gum pkgs.jq];
         text = ''
           die() {
             echo "init: $*" >&2
@@ -215,20 +215,87 @@
           generated=("$staging"/*)
           [ "''${#generated[@]}" -eq 1 ] && [ -d "''${generated[0]}" ] \
             || die "expected cargo-generate to create one project directory, found ''${#generated[@]} entries"
-          project="$PWD/$(basename "''${generated[0]}")"
-          [ -e "$project" ] || [ -L "$project" ] && die "$project already exists, so it was left alone"
-          mv -T "''${generated[0]}" "$project"
 
-          answers="$project/.init-answers"
-          [ -f "$answers" ] || die "the template's post hook did not write $answers"
-          vcs="" install_skills=""
+          answers="''${generated[0]}/.init-answers"
+          [ -f "$answers" ] || die "the template's post hook did not write .init-answers"
+          vcs="" install_skills="" modules=""
           while IFS='=' read -r key value; do
             case $key in
               vcs) vcs=$value ;;
               install_skills) install_skills=$value ;;
+              modules) modules=,$value ;;
             esac
           done <"$answers"
           rm "$answers"
+
+          # The templates document every module, and the docs of the modules
+          # left out are removed here rather than with Liquid, which would
+          # show up in the plain templates. A line that is only
+          # <!-- module:NAME --> opens a block that <!-- /module:NAME -->
+          # closes, and a line ending in <!-- module:NAME --> stands alone.
+          # Kept modules keep their markers, so the defaults match the
+          # templates byte for byte.
+          selected() { [[ $modules == *",$1,"* ]]; }
+          drop_unselected_modules() {
+            local file=$1 line name lineno=0 open=() kept=() closed_dropped=false
+            local where=''${file#"''${generated[0]}/"}
+            local open_re='^<!-- module:([A-Za-z]+) -->$'
+            local close_re='^<!-- /module:([A-Za-z]+) -->$'
+            local line_re='^.*[^[:space:]] <!-- module:([A-Za-z]+) -->$'
+            dropping() {
+              local block
+              for block in "''${open[@]}"; do
+                selected "$block" || return 0
+              done
+              return 1
+            }
+            while IFS= read -r line || [ -n "$line" ]; do
+              lineno=$((lineno + 1))
+              if [[ $line =~ $open_re ]]; then
+                open+=("''${BASH_REMATCH[1]}")
+                dropping || kept+=("$line")
+                closed_dropped=false
+              elif [[ $line =~ $close_re ]]; then
+                name=''${BASH_REMATCH[1]}
+                if [ "''${#open[@]}" -eq 0 ] || [ "''${open[-1]}" != "$name" ]; then
+                  die "$where:$lineno: <!-- /module:$name --> does not close the innermost open module block"
+                fi
+                if dropping; then
+                  unset 'open[-1]'
+                  dropping || closed_dropped=true
+                else
+                  unset 'open[-1]'
+                  kept+=("$line")
+                fi
+              elif [[ $line =~ $line_re ]]; then
+                if ! dropping && selected "''${BASH_REMATCH[1]}"; then
+                  kept+=("$line")
+                fi
+                closed_dropped=false
+              elif [[ $line == *'<!-- module:'* || $line == *'<!-- /module:'* ]]; then
+                die "$where:$lineno: a module marker must be a line of its own or end a line"
+              elif ! dropping; then
+                # A removed block leaves its surrounding blank lines doubled.
+                if [ "$closed_dropped" = false ] || [ -n "$line" ] \
+                  || { [ "''${#kept[@]}" -gt 0 ] && [ -n "''${kept[-1]}" ]; }; then
+                  kept+=("$line")
+                fi
+                closed_dropped=false
+              fi
+            done <"$file"
+            [ "''${#open[@]}" -eq 0 ] || die "$where: <!-- module:''${open[-1]} --> is never closed"
+            printf '%s\n' "''${kept[@]}" >"$file"
+          }
+          grep -rlZE '<!-- /?module:' "''${generated[0]}" >"$template/marked" || [ $? -eq 1 ] \
+            || die "could not search the generated project for module markers"
+          mapfile -d "" marked <"$template/marked"
+          for file in "''${marked[@]}"; do
+            drop_unselected_modules "$file"
+          done
+
+          project="$PWD/$(basename "''${generated[0]}")"
+          [ -e "$project" ] || [ -L "$project" ] && die "$project already exists, so it was left alone"
+          mv -T "''${generated[0]}" "$project"
           echo "init: created $project"
 
           # Run from the user's directory with the project path, so jj and git
