@@ -19,7 +19,7 @@
       then
         builtins.getFlake (builtins.unsafeDiscardStringContext
           "path:${self.sourceInfo.outPath}?narHash=${self.sourceInfo.narHash}")
-      else throw "Run this from the repo root as `nix flake check 'path:.?dir=tests'`, so the whole checkout is in the flake source.";
+      else throw "Run this from the repo root as `nix flake check '.?dir=tests'`, so the whole checkout is in the flake source.";
     inherit (rust-toolchains.inputs) nixpkgs;
 
     system = "x86_64-linux";

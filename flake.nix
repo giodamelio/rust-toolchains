@@ -308,7 +308,7 @@
                 description = "Evaluate every output on every system";
               }
               {
-                command = "nix flake check 'path:.?dir=tests'";
+                command = "nix flake check '.?dir=tests'";
                 description = "Build and check the templates against this checkout";
               }
             ];
