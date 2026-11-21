@@ -11,7 +11,7 @@ use tokio::signal::unix::{SignalKind, signal};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::filter::LevelFilter;
 
-const DEFAULT_ADDR: &str = "127.0.0.1:3000";
+const DEFAULT_ADDR: &str = "127.0.0.1:8000";
 
 fn main() -> Result<(), Box<dyn Error>> {
     tracing_subscriber::fmt()

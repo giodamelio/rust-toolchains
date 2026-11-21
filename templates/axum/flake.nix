@@ -59,13 +59,13 @@
               machine.wait_for_unit("${name}.socket")
               machine.require_unit_state("${name}.service", "inactive")
 
-              machine.succeed('test "$(curl --fail --silent http://127.0.0.1:3000/health)" = ok')
+              machine.succeed('test "$(curl --fail --silent http://127.0.0.1:8000/health)" = ok')
               machine.wait_for_unit("${name}.service")
               machine.succeed('test "$(systemctl show --property=Type --value ${name}.service)" = notify')
 
               machine.systemctl("stop ${name}.service")
               machine.wait_until_succeeds("journalctl --unit=${name}.service --grep='shutting down'")
-              machine.succeed('test "$(curl --fail --silent http://127.0.0.1:3000/health)" = ok')
+              machine.succeed('test "$(curl --fail --silent http://127.0.0.1:8000/health)" = ok')
             '';
           };
         };
@@ -89,7 +89,7 @@
           };
           listenStream = lib.mkOption {
             type = lib.types.str;
-            default = "127.0.0.1:3000";
+            default = "127.0.0.1:8000";
             example = "[::]:8080";
             description = "TCP address the socket unit listens on, in the form systemd's `ListenStream=` takes. A bare port listens on every address.";
           };

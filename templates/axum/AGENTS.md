@@ -6,11 +6,11 @@ The crate is an axum HTTP server with one route, `GET /health`, which returns `o
 
 ## Run the server locally
 
-Run `cargo run`. Without socket activation, the server binds `LISTEN_ADDR`, or `127.0.0.1:3000` when that is unset:
+Run `cargo run`. Without socket activation, the server binds `LISTEN_ADDR`, or `127.0.0.1:8000` when that is unset:
 
 ```sh
 cargo run
-curl 127.0.0.1:3000/health
+curl 127.0.0.1:8000/health
 LISTEN_ADDR=127.0.0.1:8080 cargo run
 ```
 
@@ -36,7 +36,7 @@ systemd-socket-activate -l 127.0.0.1:3001 "$(cargo metadata --format-version 1 |
 `flake.nix` exports `nixosModules.default`. Its options are named after `package.name` in `Cargo.toml`:
 
 - `services.<crate-name>.enable` adds the `<crate-name>.socket` and `<crate-name>.service` units.
-- `services.<crate-name>.listenStream` is the socket's `ListenStream=`, by default `127.0.0.1:3000`.
+- `services.<crate-name>.listenStream` is the socket's `ListenStream=`, by default `127.0.0.1:8000`.
 - `services.<crate-name>.package` is the server package, by default this flake's `packages.default`.
 
 The service runs with `DynamicUser`, `ProtectSystem=strict` and further sandboxing. If new code needs to write files, add a `StateDirectory=` or similar rather than loosening the sandbox. If it needs a new address family or system call, relax `RestrictAddressFamilies` or `SystemCallFilter` as narrowly as possible.

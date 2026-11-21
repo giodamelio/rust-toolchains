@@ -96,10 +96,11 @@
       pkgs.runCommand "init-matches-${name}" {} ''
         # cargo-generate derives `authors` from $USER and aborts without it.
         # vcs=none because the sandbox has no jj or git, and a repo would show
-        # up in the diff.
+        # up in the diff. axum's dev port is otherwise random, so it is pinned
+        # to the template's own.
         export HOME=$TMPDIR USER=nixbld
         cd $TMPDIR
-        ${rust-toolchains.apps.${system}.init.program} --name rust-project --silent --template ${name} -d vcs=none
+        ${rust-toolchains.apps.${system}.init.program} --name rust-project --silent --template ${name} -d vcs=none ${pkgs.lib.optionalString (name == "axum") "--dev-port 8000"}
         diff -r ${templateSrc name} rust-project
         touch $out
       '';

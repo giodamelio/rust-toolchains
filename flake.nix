@@ -89,9 +89,20 @@
           # cargo-generate reads every placeholder before it copies anything, so
           # the base template cannot be one of its questions; init takes it as
           # its own flag and passes everything else through.
-          base="" silent=false args=()
+          base="" dev_port="" silent=false args=()
           while [ $# -gt 0 ]; do
             case $1 in
+              --dev-port)
+                [ $# -ge 2 ] || die "--dev-port needs a port number"
+                dev_port=$2
+                shift 2
+                continue
+                ;;
+              --dev-port=*)
+                dev_port=''${1#--dev-port=}
+                shift
+                continue
+                ;;
               # The project is found as the only entry cargo-generate creates
               # in an empty staging dir, so a destination of the user's own, or
               # --init's generating into it directly, would break that.
@@ -162,6 +173,19 @@
           # axum's flake reads the crate name from Cargo.toml instead.
           if [ "$base" = basic ]; then
             placeholder flake.nix 'pname = "rust-project";' 'pname = "{{ project-name }}";'
+          fi
+
+          # A random dev port keeps several generated servers from colliding on
+          # one machine; --dev-port pins it, which the drift check relies on.
+          if [ "$base" = axum ]; then
+            dev_port=''${dev_port:-$((8000 + RANDOM % 1000))}
+            [[ $dev_port =~ ^[0-9]+$ ]] && [ "$dev_port" -ge 1 ] && [ "$dev_port" -le 65535 ] \
+              || die "--dev-port must be a port number, got '$dev_port'"
+            for file in src/main.rs flake.nix AGENTS.md; do
+              placeholder "$file" '127.0.0.1:8000' "127.0.0.1:$dev_port"
+            done
+          elif [ -n "$dev_port" ]; then
+            die "--dev-port only applies to --template axum"
           fi
 
           vcs_choices=()
