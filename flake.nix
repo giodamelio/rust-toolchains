@@ -268,6 +268,10 @@
           pkgs.prek
           (import ./nix/bump-nightly.nix {inherit pkgs components systems;})
           (import ./nix/bump-template-skills.nix {inherit pkgs;})
+          (import ./nix/refresh-test-lockfiles.nix {
+            inherit pkgs;
+            inherit (self.packages.${system}) stable;
+          })
         ];
         shellHook =
           prekLib.mkShellHook (prekLib.mkConfig [
@@ -299,6 +303,10 @@
               {
                 command = "bump-template-skills [TAG]";
                 description = "Bump every template's agent skills lockfile";
+              }
+              {
+                command = "refresh-test-lockfiles [TEMPLATE...]";
+                description = "Regenerate tests/*/Cargo.lock from the templates";
               }
               {
                 command = "nix fmt";

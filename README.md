@@ -73,14 +73,14 @@ devShells.${system}.default = pkgs.mkShell {
 
 ## Maintain this repo
 
-| Task                            | Command                                                                                                         |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Bump stable                     | `nix flake update fenix`                                                                                        |
-| Bump nightly                    | `bump-nightly [YYYY-MM-DD]`                                                                                     |
-| Bump the templates' skills      | `bump-template-skills [TAG]`                                                                                    |
-| Refresh `tests/axum/Cargo.lock` | `cargo generate-lockfile` in a project from `nix flake init -t .#axum`, then copy `Cargo.lock` to `tests/axum/` |
-| Check every output              | `nix flake check --all-systems`                                                                                 |
-| Check the templates             | `nix flake check '.?dir=tests'`                                                                                 |
-| Format                          | `nix fmt`                                                                                                       |
+| Task                         | Command                                |
+| ---------------------------- | -------------------------------------- |
+| Bump stable                  | `nix flake update fenix`               |
+| Bump nightly                 | `bump-nightly [YYYY-MM-DD]`            |
+| Bump the templates' skills   | `bump-template-skills [TAG]`           |
+| Refresh `tests/*/Cargo.lock` | `refresh-test-lockfiles [TEMPLATE...]` |
+| Check every output           | `nix flake check --all-systems`        |
+| Check the templates          | `nix flake check '.?dir=tests'`        |
+| Format                       | `nix fmt`                              |
 
 CI enables KVM for the NixOS VM tests and runs both checks and `nix fmt -- --fail-on-change`.
