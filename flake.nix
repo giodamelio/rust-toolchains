@@ -200,10 +200,11 @@
           rm "$answers"
           echo "init: created $project"
 
-          cd "$project"
+          # Run from the user's directory with the project path, so jj and git
+          # report the new project rather than ".".
           case $vcs in
-            jj) setup=(jj git init) ;;
-            git) setup=(git init) ;;
+            jj) setup=(jj git init "$project") ;;
+            git) setup=(git init "$project") ;;
             none) setup=() ;;
             *) die "created $project, but the vcs answer '$vcs' is unknown" ;;
           esac
@@ -215,6 +216,7 @@
               || die "created $project, but '$cmd' failed. Fix the error above and run it there."
           fi
 
+          cd "$project"
           if [ "$install_skills" = true ]; then
             RUST_TOOLCHAINS_SKILLS_ROOT=$project ${lib.getExe skills.install} \
               || die "created $project, but downloading the agent skills failed. Run skills-install in its devshell to retry."
