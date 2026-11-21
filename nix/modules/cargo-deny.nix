@@ -25,6 +25,8 @@
           cargo-deny config, rendered to TOML and passed with `--config`.
           Ignored when the repo has a `deny.toml`, `.deny.toml`, `.cargo/deny.toml` or `.config/deny.toml`.
           Lists such as `licenses.allow` are appended to the defaults; use `lib.mkForce` to replace them.
+          When `.cargo/config.toml` replaces crates.io with vendored sources, cargo-deny cannot reach the index
+          and warns `index-failure` for every crate; set `advisories.yanked = "allow"` to skip the yanked check.
         '';
       };
       configFile = lib.mkOption {

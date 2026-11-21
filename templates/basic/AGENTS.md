@@ -67,7 +67,7 @@ Remove entries when the command they describe goes away.
 - `cargo-test-auto` runs `cargo nextest run` when `.config/nextest.toml` exists, and `cargo test` otherwise.
 - `cargo-unused-deps` fails on dependencies flagged by Cargo's `unused_dependencies` lint. <!-- module:unusedDeps -->
 - `cargo-unused-dev-deps` runs cargo-shear for the dev-dependencies that lint skips. To keep a dev-dependency that cargo-shear wrongly reports as unused, add it to `[package.metadata.cargo-shear] ignored = ["crate-name"]` in that crate's `Cargo.toml`. <!-- module:unusedDeps -->
-- `cargo-deny-check` checks advisories, licenses, banned crates and sources. To change its policy, set `rust-toolchains.cargoDeny.settings` in `flake.nix`, or add a `deny.toml`, which takes precedence. <!-- module:cargoDeny -->
+- `cargo-deny-check` checks advisories, licenses, banned crates and sources. To change its policy, set `rust-toolchains.cargoDeny.settings` in `flake.nix`, or add a `deny.toml`, which takes precedence. If you vendor crates with a `[source.crates-io] replace-with` in `.cargo/config.toml`, cargo-deny cannot check for yanked crates and warns `index-failure` for each one, so set `rust-toolchains.cargoDeny.settings.advisories.yanked = "allow";`. <!-- module:cargoDeny -->
 - Keep `publish = false` in `Cargo.toml` unless the crate gets a `license` field. cargo-deny rejects unlicensed crates that could be published. <!-- module:cargoDeny -->
 
 <!-- module:checks -->
