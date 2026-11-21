@@ -83,4 +83,4 @@ devShells.${system}.default = pkgs.mkShell {
 | Check the templates             | `nix flake check '.?dir=tests'`                                                                                 |
 | Format                          | `nix fmt`                                                                                                       |
 
-CI runs both checks and `alejandra --check .`.
+CI enables KVM for the NixOS VM tests and runs both checks and `alejandra --check .`.

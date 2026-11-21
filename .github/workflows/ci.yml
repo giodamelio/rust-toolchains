@@ -18,7 +18,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # The NixOS VM tests in the tests flake need /dev/kvm. The action opens it
+      # to the build users with a udev rule, and Nix then adds the kvm system
+      # feature itself, so a missing KVM fails the VM tests instead of hiding.
       - uses: cachix/install-nix-action@bb0495a1086c46893eee56f32fd192dfe4a15bb9 # v32.0.0
+        with:
+          enable_kvm: true
       - run: nix flake check --all-systems
       # The tests flake loads the whole checkout through getFlake, so it must be
       # addressed as a subdirectory of the root flake, not as ./tests.
