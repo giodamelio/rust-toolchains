@@ -17,6 +17,9 @@
       pkgs.stdenv.mkDerivation {
         name = "${cfg.package.pname}-${name}";
         inherit (cfg.package) src cargoDeps;
+        # A package built with cargoVendorDir has cargoDeps = null, and
+        # cargoSetupHook then reads the vendor dir from the source instead.
+        cargoVendorDir = cfg.package.cargoVendorDir or null;
         nativeBuildInputs = [toolchain pkgs.rustPlatform.cargoSetupHook] ++ cfg.nativeBuildInputs;
         inherit (cfg) buildInputs;
         buildPhase = ''
@@ -37,7 +40,7 @@
         type = lib.types.package;
         default = config.packages.default;
         defaultText = lib.literalExpression "config.packages.default";
-        description = "A buildRustPackage derivation whose src and cargoDeps the checks reuse.";
+        description = "A buildRustPackage derivation whose src and cargoDeps, or cargoVendorDir, the checks reuse.";
       };
       nativeBuildInputs = lib.mkOption {
         type = lib.types.listOf lib.types.package;
