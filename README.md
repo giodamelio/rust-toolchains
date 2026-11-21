@@ -9,9 +9,13 @@ Pinned Rust toolchains, flake-parts modules and project templates.
 
 ## Start a new project
 
+| Template | Description                                                                        | Docs                                      |
+| -------- | ---------------------------------------------------------------------------------- | ----------------------------------------- |
+| `basic`  | Rust binary.                                                                       | [basic README](templates/basic/README.md) |
+| `axum`   | axum HTTP server with systemd socket activation, `Type=notify` and a NixOS module. | [axum README](templates/axum/README.md)   |
+
 ```sh
-nix flake init -t github:giodamelio/rust-toolchains        # basic
-nix flake init -t github:giodamelio/rust-toolchains#axum   # axum HTTP server
+nix flake init -t github:giodamelio/rust-toolchains#<template>
 nix run github:giodamelio/rust-toolchains#init
 ```
 

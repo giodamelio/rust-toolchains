@@ -168,6 +168,7 @@
             printf '%s\n' "''${content//"$2"/"$3"}" >"$file"
           }
           placeholder Cargo.toml rust-project '{{ project-name }}'
+          placeholder README.md '# rust-project' '# {{ project-name }}'
           placeholder Cargo.toml 'publish = false' "$(<${./templates/init/fields/Cargo.toml.liquid})"
           placeholder flake.nix '        rust-toolchains.channel = "stable";' "$(<${./templates/init/fields/flake.nix.liquid})"
           # axum's flake reads the crate name from Cargo.toml instead.
@@ -181,7 +182,7 @@
             dev_port=''${dev_port:-$((8000 + RANDOM % 1000))}
             [[ $dev_port =~ ^[0-9]+$ ]] && [ "$dev_port" -ge 1 ] && [ "$dev_port" -le 65535 ] \
               || die "--dev-port must be a port number, got '$dev_port'"
-            for file in src/main.rs flake.nix AGENTS.md; do
+            for file in src/main.rs flake.nix AGENTS.md README.md; do
               placeholder "$file" '127.0.0.1:8000' "127.0.0.1:$dev_port"
             done
           elif [ -n "$dev_port" ]; then

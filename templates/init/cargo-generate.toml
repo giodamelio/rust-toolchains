@@ -2,7 +2,7 @@
 cargo_generate_version = ">=0.25.0"
 # Everything else comes from the chosen template and is copied unrendered, so
 # a stray `{{` there can never be mistaken for a placeholder.
-include = ["/flake.nix", "/Cargo.toml", "/LICENSE-MIT"]
+include = ["/flake.nix", "/Cargo.toml", "/README.md", "/LICENSE-MIT"]
 # The init wrapper has already spliced these into flake.nix and Cargo.toml.
 ignore = ["fields"]
 
